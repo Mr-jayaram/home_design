@@ -1079,6 +1079,14 @@
                     <div class="sidebar-title">
                         <span>🪑</span> Furniture & Fixtures
                     </div>
+                    <div class="symbol-item" draggable="true" ondragstart="dragSymbol(event, 'compass')"
+                        onclick="pickItem('compass')">
+                        <span class="symbol-icon">🧭</span>
+                        <div class="symbol-info">
+                            <div class="symbol-name">Compass</div>
+                            <div class="symbol-size">Orientation</div>
+                        </div>
+                    </div>
                     <div class="symbol-item" draggable="true" ondragstart="dragSymbol(event, 'bed')"
                         onclick="pickItem('bed')">
                         <span class="symbol-icon">🛏️</span>
@@ -1530,9 +1538,467 @@
         // Application state
         let currentTool = 'select';
         let isDrawing = false;
+        let isExporting = false; // New Flag for Export Mode
         let startX, startY;
         let elements = [];
-        let gridSnap = 15; // Set to default SCALE (1 foot)
+        let gridSnap = 15;
+
+        // ... [Existing code matches until exportDesign] ...
+
+        function exportDesign() {
+            if (!project.homeWall) {
+                showToast('⚠️', 'Please create a project first!');
+                return;
+            }
+
+            // 1. Save State
+            const savedState = {
+                width: canvas.width,
+                height: canvas.height,
+                scale: SCALE,
+                offsetX: offsetX,
+                offsetY: offsetY,
+                showGrid: showGrid,
+                showGridNumbers: showGridNumbers,
+                snap: snapEnabled
+            };
+
+            // 2. Setup High-Res Canvas for Export
+            isExporting = true;
+            showGrid = false;
+            showGridNumbers = false;
+
+            // A4 Landscape-ish Ratio (High Quality)
+            canvas.width = 2400;
+            canvas.height = 1600;
+
+            // 3. Fit Project to "Print Area"
+            // We leave margins for Header (Top) and Footer (Bottom)
+            const margin = 100;
+            const headerHeight = 200;
+            const footerHeight = 150;
+            const printAreaW = canvas.width - (margin * 2);
+            const printAreaH = canvas.height - headerHeight - footerHeight;
+
+            // Calculate bounding box of the home
+            const homeW = project.homeWall.width / savedState.scale * SCALE; // Unscale then rescale? No, dimensions are static feet
+            const projW_px = project.totalLength * 1; // Base units
+            const projH_px = project.totalBreadth * 1;
+
+            // Find scale to fit print area
+            // We need to scale pixels_per_foot (SCALE) so that (totalLength * SCALE) fits in printAreaW
+            const scaleX = printAreaW / project.totalLength;
+            const scaleY = printAreaH / project.totalBreadth;
+            SCALE = Math.floor(Math.min(scaleX, scaleY)); // New Export Scale
+
+            // Center the project
+            // The homeWall x,y are visual offsets in the canvas. 
+            // In redrawAll, we translate by offsetX/Y. 
+            // We want (offsetX + homeWall.x) to be centered.
+
+            // Let's reset wall position for the export canvas center
+            const wallPxW = project.totalLength * SCALE;
+            const wallPxH = project.totalBreadth * SCALE;
+
+            project.homeWall.x = (canvas.width - wallPxW) / 2;
+            // Center vertically in the "content area" (between header and footer)
+            project.homeWall.y = headerHeight + (printAreaH - wallPxH) / 2;
+
+            // Reset panning
+            offsetX = 0;
+            offsetY = 0;
+
+            // Sync other elements to new positions
+            // Re-calculating all positions is complex because they are stored relative to canvas, not valid "project coordinates"
+            // FIX: We need a smarter way or just shift everything.
+            // Actually, `resizeCanvas` handles centering relative to wall delta. 
+            // Let's manually shift all elements to match the new homeWall.x/y
+
+            const dx = project.homeWall.x - savedState.originX_Ref; // We need original ref...
+            // Fallback: We'll rely on the fact that `resizeCanvas` logic logic shifts everything if we call it?
+            // No, `resizeCanvas` uses the *change* in center.
+
+            // Let's recalculate relative positions based on the ratio
+            // This is tricky. Simplified approach:
+            // 1. Calculate relative positions of everything to the homeWall BEFORE changing it.
+            // 2. Set new Scale/HomeWall
+            // 3. Re-apply positions.
+
+            // To be safe, we rely on the `updateScale` logic which handles rescaling.
+            // But we changed canvas size manually.
+
+            // Let's try leveraging updateScale logic but manually.
+            const ratio = SCALE / savedState.scale;
+            const oldHomeX = (savedState.width - (project.totalLength * savedState.scale)) / 2; // Roughly where it was centered
+            const oldHomeY = (savedState.height - (project.totalBreadth * savedState.scale)) / 2;
+
+            // Shift rooms/elements relative to new wall position
+            project.rooms.forEach(room => {
+                const relX = (room.x - oldHomeX) / savedState.scale; // feet relative to corner
+                const relY = (room.y - oldHomeY) / savedState.scale;
+
+                room.width = room.length * SCALE;
+                room.height = room.breadth * SCALE;
+                room.x = project.homeWall.x + (relX * SCALE);
+                room.y = project.homeWall.y + (relY * SCALE);
+            });
+
+            elements.forEach(el => {
+                if (el.type !== 'text' && el.type !== 'symbol') {
+                    // Lines
+                    const rx1 = (el.x1 - oldHomeX) / savedState.scale;
+                    const rx2 = (el.x2 - oldHomeX) / savedState.scale;
+                    const ry1 = (el.y1 - oldHomeY) / savedState.scale;
+                    const ry2 = (el.y2 - oldHomeY) / savedState.scale;
+
+                    el.x1 = project.homeWall.x + (rx1 * SCALE);
+                    el.x2 = project.homeWall.x + (rx2 * SCALE);
+                    el.y1 = project.homeWall.y + (ry1 * SCALE);
+                    el.y2 = project.homeWall.y + (ry2 * SCALE);
+                } else {
+                    // Points
+                    const rx = (el.x - oldHomeX) / savedState.scale;
+                    const ry = (el.y - oldHomeY) / savedState.scale;
+                    el.x = project.homeWall.x + (rx * SCALE);
+                    el.y = project.homeWall.y + (ry * SCALE);
+                }
+            });
+
+            // 4. Draw The Plan
+            redrawAll();
+
+            // 5. Draw Header & Footer (Overlay)
+            ctx.save();
+            ctx.fillStyle = 'black'; // Text Color
+
+            // HEADER: Skyline Real Estate Style
+            ctx.textAlign = 'left';
+            ctx.font = 'bold 60px "Playfair Display", serif';
+            ctx.fillText('Skyline', margin, 100);
+
+            ctx.font = 'bold 30px "DM Sans", sans-serif';
+            ctx.fillStyle = '#475569';
+            ctx.fillText('Real Estate', margin, 140);
+
+            // Line under header
+            ctx.beginPath();
+            ctx.moveTo(margin, 160);
+            ctx.lineTo(canvas.width - margin, 160);
+            ctx.strokeStyle = '#e2e8f0';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // FOOTER: Disclaimer & Project Info
+            const footerY = canvas.height - 80;
+
+            // Disclaimer
+            ctx.font = '20px "DM Sans", sans-serif';
+            ctx.fillStyle = '#94a3b8';
+            ctx.textAlign = 'left';
+            const disclaimer = "This floor plan is for illustrative purposes only and is not drawn to scale. All measurements are approximate.";
+            ctx.fillText(disclaimer, margin, footerY);
+
+            // Right Side Info
+            ctx.textAlign = 'right';
+            ctx.fillStyle = 'black';
+            ctx.font = 'bold 30px "DM Sans", sans-serif';
+            ctx.fillText('Floor Plan', canvas.width - margin, footerY - 30);
+
+            ctx.font = '24px "DM Sans", sans-serif';
+            ctx.fillStyle = '#475569';
+            ctx.fillText(project.name || 'Project Name', canvas.width - margin, footerY + 10);
+
+            // Frame Border (Optional, like the image)
+            ctx.strokeStyle = '#cbd5e1';
+            ctx.lineWidth = 4;
+            ctx.strokeRect(40, 40, canvas.width - 80, canvas.height - 80);
+
+            ctx.restore();
+
+            // 6. Download
+            const link = document.createElement('a');
+            link.download = `${project.name || 'floor-plan'}-professional.png`;
+            link.href = canvas.toDataURL('image/png', 1.0);
+            link.click();
+
+            // 7. RESTORE STATE
+            isExporting = false;
+            canvas.width = savedState.width;
+            canvas.height = savedState.height;
+            SCALE = savedState.scale;
+            offsetX = savedState.offsetX;
+            offsetY = savedState.offsetY;
+            showGrid = savedState.showGrid;
+            showGridNumbers = savedState.showGridNumbers;
+
+            // Restore positions requires inverse logic or just "Reset to Center" 
+            // It's safer to just call fitToScreen() logic or re-center homeWall manually to old position.
+            project.homeWall.x = oldHomeX; // Wait, this is tricky because we modified object props in place.
+            // We need a robust restore.
+            // Let's re-run the shift logic with inverse ratio.
+
+            const invRatio = savedState.scale / SCALE; // Back to original scale
+            // Current homeWall is centered in export canvas.
+            // element.x is currently Export Coord.
+            // We want to move it back to SavedState Coord.
+
+            // But actually, HomeWall.x/y is just the top-left anchor.
+            // Let's simply restore homeWall to oldHomeX/Y and scale everything back relative to it.
+
+            const currentHomeX = project.homeWall.x;
+            const currentHomeY = project.homeWall.y;
+
+            project.homeWall.x = oldHomeX;
+            project.homeWall.y = oldHomeY;
+
+            project.rooms.forEach(room => {
+                const relX = (room.x - currentHomeX) / SCALE;
+                const relY = (room.y - currentHomeY) / SCALE;
+
+                room.width = room.length * savedState.scale;
+                room.height = room.breadth * savedState.scale;
+                room.x = oldHomeX + (relX * savedState.scale);
+                room.y = oldHomeY + (relY * savedState.scale);
+            });
+
+            elements.forEach(el => {
+                if (el.type !== 'text' && el.type !== 'symbol') {
+                    const rx1 = (el.x1 - currentHomeX) / SCALE;
+                    const rx2 = (el.x2 - currentHomeX) / SCALE;
+                    const ry1 = (el.y1 - currentHomeY) / SCALE;
+                    const ry2 = (el.y2 - currentHomeY) / SCALE;
+                    el.x1 = oldHomeX + (rx1 * savedState.scale);
+                    el.x2 = oldHomeX + (rx2 * savedState.scale);
+                    el.y1 = oldHomeY + (ry1 * savedState.scale);
+                    el.y2 = oldHomeY + (ry2 * savedState.scale);
+                } else {
+                    const rx = (el.x - currentHomeX) / SCALE;
+                    const ry = (el.y - currentHomeY) / SCALE;
+                    el.x = oldHomeX + (rx * savedState.scale);
+                    el.y = oldHomeY + (ry * savedState.scale);
+                }
+            });
+
+            redrawAll();
+            showToast('✓', 'Professional Export Complete!');
+        }
+
+        // --- UPDATED DRAWING FUNCTIONS FOR EXPORT STYLE ---
+
+        function drawAllRooms() {
+            // pass 1: Backgrounds
+            project.rooms.forEach(room => {
+                if (isExporting) {
+                    // Export Style: Clean White Room, Black Outline
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(room.x, room.y, room.width, room.height);
+                    ctx.strokeStyle = '#000000';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(room.x, room.y, room.width, room.height);
+                } else {
+                    ctx.fillStyle = room.color + '20';
+                    ctx.fillRect(room.x, room.y, room.width, room.height);
+                }
+            });
+
+            // pass 2: Labels
+            project.rooms.forEach(room => {
+                if (!isExporting && room === selectedRoom) {
+                    const wallThick = parseInt(document.getElementById('wallThickness').value) || 6;
+                    ctx.save();
+                    ctx.setLineDash([5, 5]);
+                    ctx.strokeStyle = '#ef4444';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(room.x - wallThick / 2 - 4, room.y - wallThick / 2 - 4, room.width + wallThick + 8, room.height + wallThick + 8);
+                    ctx.fillStyle = '#ef4444';
+                    ctx.fillRect(room.x + room.width + wallThick / 2 - 6, room.y + room.height + wallThick / 2 - 6, 12, 12);
+                    ctx.restore();
+                }
+
+                if (isExporting) {
+                    // Modern Black Text
+                    ctx.fillStyle = '#000000';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+
+                    // Name
+                    ctx.font = 'bold 24px "DM Sans"';
+                    ctx.fillText(room.name, room.x + room.width / 2, room.y + room.height / 2 - 10);
+
+                    // Dimensions
+                    ctx.font = '18px "DM Sans"';
+                    const area = Math.round(room.length * room.breadth);
+                    ctx.fillText(`${area} sq ft`, room.x + room.width / 2, room.y + room.height / 2 + 20);
+                } else {
+                    ctx.font = '32px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(room.icon, room.x + room.width / 2, room.y + room.height / 2 - 15);
+                    ctx.font = 'bold 14px DM Sans';
+                    ctx.fillStyle = '#1e293b';
+                    ctx.fillText(room.name, room.x + room.width / 2, room.y + room.height / 2 + 20);
+                    ctx.font = '11px DM Sans';
+                    ctx.fillStyle = '#64748b';
+                    ctx.fillText(`${room.length}' × ${room.breadth}'`, room.x + room.width / 2, room.y + room.height / 2 + 35);
+                }
+            });
+        }
+
+        function drawDoor(x1, y1, x2, y2, preview, element = null) {
+            const distance = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+            const angle = Math.atan2(y2 - y1, x2 - x1);
+            const thickness = parseInt(document.getElementById('wallThickness').value);
+            const flippedHinge = element?.flippedHinge || false;
+            const flippedSwing = element?.flippedSwing || false;
+
+            ctx.save();
+            ctx.translate(x1, y1);
+            ctx.rotate(angle);
+
+            // Clear wall area
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, -thickness / 2, distance, thickness);
+
+            // Handle Flips
+            if (flippedHinge) { ctx.translate(distance, 0); ctx.scale(-1, 1); }
+            if (flippedSwing) { ctx.scale(1, -1); }
+
+            // Style
+            ctx.strokeStyle = isExporting ? '#000000' : '#1e293b';
+            ctx.lineWidth = isExporting ? 3 : 2; // Thicker for print
+
+            // Door Frame
+            ctx.beginPath();
+            ctx.moveTo(0, -thickness / 2);
+            ctx.lineTo(0, thickness / 2);
+            ctx.stroke();
+
+            // Panel
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(0, -distance);
+            ctx.stroke();
+
+            // Arc
+            ctx.beginPath();
+            ctx.lineWidth = isExporting ? 2 : 1;
+            ctx.arc(0, 0, distance, 0, -Math.PI / 2, true);
+            ctx.stroke();
+
+            ctx.restore();
+
+            // Labels (Skip if exporting to keep it clean, or add small)
+            if (!preview && !isExporting) {
+                // ... [Existing Label Logic] ...
+            }
+        }
+
+        function drawWindow(x1, y1, x2, y2, preview) {
+            const distance = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+            const angle = Math.atan2(y2 - y1, x2 - x1);
+            const thickness = parseInt(document.getElementById('wallThickness').value);
+
+            ctx.save();
+            ctx.translate(x1, y1);
+            ctx.rotate(angle);
+
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, -thickness / 2, distance, thickness);
+
+            ctx.strokeStyle = isExporting ? '#000000' : '#1e293b';
+            ctx.lineWidth = isExporting ? 3 : 1.5;
+            ctx.strokeRect(0, -thickness / 2, distance, thickness);
+
+            ctx.beginPath();
+            ctx.lineWidth = isExporting ? 2 : 1;
+            ctx.moveTo(0, -thickness / 6);
+            ctx.lineTo(distance, -thickness / 6);
+            ctx.moveTo(0, thickness / 6);
+            ctx.lineTo(distance, thickness / 6);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        function drawWallDimension(x1, y1, x2, y2, color) {
+            if (isExporting) {
+                // Professional Simple Dimensions
+                const distance = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+                const lengthFt = (distance / SCALE).toFixed(1);
+                const midX = (x1 + x2) / 2;
+                const midY = (y1 + y2) / 2;
+                const angle = Math.atan2(y2 - y1, x2 - x1);
+
+                ctx.save();
+                ctx.translate(midX, midY);
+                let textAngle = angle;
+                if (textAngle > Math.PI / 2 || textAngle < -Math.PI / 2) textAngle += Math.PI;
+                ctx.rotate(textAngle);
+
+                ctx.translate(0, -20); // Offset above wall
+                ctx.font = '16px "DM Sans"';
+                ctx.fillStyle = '#000000';
+                ctx.textAlign = 'center';
+                ctx.fillText(`${lengthFt}'`, 0, 0);
+
+                ctx.restore();
+                return;
+            }
+            // ... [Original Logic] ...
+            const distance = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+            const lengthFt = (distance / SCALE).toFixed(1);
+            const midX = (x1 + x2) / 2;
+            const midY = (y1 + y2) / 2;
+            const angle = Math.atan2(y2 - y1, x2 - x1);
+
+            ctx.save();
+            ctx.translate(midX, midY);
+
+            // Keep text readable (not upside down)
+            let textAngle = angle;
+            if (textAngle > Math.PI / 2 || textAngle < -Math.PI / 2) {
+                textAngle += Math.PI;
+            }
+            ctx.rotate(textAngle);
+
+            // Offset text away from the wall line
+            const offset = -25;
+            ctx.translate(0, offset);
+
+            // Enhanced font size and styling
+            ctx.font = 'bold 14px DM Sans';
+            const text = `${lengthFt} ft`;
+            const tw = ctx.measureText(text).width;
+            const padding = 8;
+
+            // Enhanced Background with shadow
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.2)';
+            ctx.shadowBlur = 4;
+            ctx.shadowOffsetX = 2;
+            ctx.shadowOffsetY = 2;
+
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.98)';
+            ctx.fillRect(-tw / 2 - padding, -12, tw + padding * 2, 24);
+
+            // Reset shadow for border
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 0;
+
+            // Enhanced Border
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.strokeRect(-tw / 2 - padding, -12, tw + padding * 2, 24);
+
+            // Text with better contrast
+            ctx.fillStyle = color;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, 0, 0);
+
+            ctx.restore();
+        } // Set to default SCALE (1 foot)
         let showGrid = true;
         let snapEnabled = true;
         let SCALE = 15; // pixels per foot
@@ -1581,6 +2047,7 @@
 
         // Symbol/Furniture definitions
         const symbols = {
+            compass: { isCompass: true, width: 60, height: 60, emoji: '🧭' },
             bed: { emoji: '🛏️', width: 80, height: 60 },
             sofa: { emoji: '🛋️', width: 90, height: 40 },
             table: { emoji: '🪑', width: 70, height: 70 },
@@ -1960,16 +2427,7 @@
             ctx.lineWidth = 10;
             ctx.strokeRect(x, y, wallWidth, wallHeight);
 
-            // Draw title
-            ctx.fillStyle = '#1e293b';
-            ctx.font = 'bold 18px DM Sans';
-            ctx.textAlign = 'center';
-            ctx.fillText(project.name, canvas.width / 2, y - 30);
-
-            // Draw dimensions
-            ctx.font = '13px DM Sans';
-            ctx.fillStyle = '#64748b';
-            ctx.fillText(`${project.totalLength}' × ${project.totalBreadth}' ${project.type}`, canvas.width / 2, y - 10);
+            // Title and dimensions text removed by user request
         }
 
         function drawGrid() {
@@ -1977,54 +2435,111 @@
             ctx.strokeStyle = '#e5e7eb';
             ctx.lineWidth = 0.5;
 
-            // Calculate visible range based on current panning
-            const startX = Math.floor(-offsetX / gridSnap) * gridSnap;
-            const endX = startX + canvas.width + gridSnap;
-            const startY = Math.floor(-offsetY / gridSnap) * gridSnap;
-            const endY = startY + canvas.height + gridSnap;
+            // Determine Grid Origin
+            let originX = 0;
+            let originY = 0;
+
+            if (project.homeWall) {
+                originX = project.homeWall.x;
+                originY = project.homeWall.y;
+            }
+
+            // Draw Lines (Aligned to Origin)
+            const startX = Math.floor((-offsetX - originX) / gridSnap) * gridSnap + originX;
+            const endX = -offsetX + canvas.width;
+            const startY = Math.floor((-offsetY - originY) / gridSnap) * gridSnap + originY;
+            const endY = -offsetY + canvas.height;
 
             // Draw vertical lines
             for (let x = startX; x <= endX; x += gridSnap) {
                 ctx.beginPath();
-                ctx.moveTo(x, startY);
-                ctx.lineTo(x, endY);
+                ctx.moveTo(x, -offsetY);
+                ctx.lineTo(x, -offsetY + canvas.height);
                 ctx.stroke();
             }
 
             // Draw horizontal lines
             for (let y = startY; y <= endY; y += gridSnap) {
                 ctx.beginPath();
-                ctx.moveTo(startX, y);
-                ctx.lineTo(endX, y);
+                ctx.moveTo(-offsetX, y);
+                ctx.lineTo(-offsetX + canvas.width, y);
                 ctx.stroke();
             }
 
-            // Draw numbers if enabled
-            if (showGridNumbers) {
-                // Account for panning to keep numbers sticky to viewport
-                const stickyY = Math.max(startY, -offsetY) + 12;
-                const stickyX = Math.max(startX, -offsetX) + 12;
+            // Draw numbers if enabled AND project exists
+            if (showGridNumbers && project.homeWall) {
+                const stepFt = gridSnap / SCALE;
 
                 ctx.font = `bold ${Math.max(10, gridSnap / 3.5)}px DM Sans`;
-                ctx.fillStyle = '#64748b';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
 
-                // Horizontal numbering (Viewport Sticky Top)
-                for (let x = startX; x <= endX; x += gridSnap) {
-                    const val = Math.floor(x / gridSnap) + 1;
-                    if (x >= 0 && x + gridSnap / 2 < canvas.width + Math.abs(offsetX)) { // Only show positive feet
-                        ctx.fillText(val.toString(), x + gridSnap / 2, stickyY);
-                    }
+                // Ruler Tracks (Fixed to Viewport)
+                const rulerTop = -offsetY;
+                const rulerLeft = -offsetX;
+
+                // Draw Ruler Backgrounds
+                ctx.fillStyle = 'rgba(248, 250, 252, 0.9)'; // Light background
+                ctx.fillRect(rulerLeft, rulerTop, canvas.width, 24); // Top strip
+                ctx.fillRect(rulerLeft, rulerTop, 24, canvas.height); // Left strip
+
+                // Border for rulers
+                ctx.strokeStyle = '#cbd5e1';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(rulerLeft, rulerTop + 24);
+                ctx.lineTo(rulerLeft + canvas.width, rulerTop + 24);
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.moveTo(rulerLeft + 24, rulerTop);
+                ctx.lineTo(rulerLeft + 24, rulerTop + canvas.height);
+                ctx.stroke();
+
+                ctx.fillStyle = '#475569'; // Text color
+
+                // --- Top Ruler (X-Axis) ---
+                // Loop only through project dimensions (0 to totalLength)
+                for (let f = 0; f <= project.totalLength; f += stepFt) {
+                    const x = originX + (f * SCALE);
+
+                    // Optimization: Only draw if visible in viewport X
+                    if (x < -offsetX - 20 || x > -offsetX + canvas.width + 20) continue;
+
+                    ctx.fillText(f.toString(), x, rulerTop + 12);
+
+                    // Tick
+                    ctx.beginPath();
+                    ctx.moveTo(x, rulerTop + 20);
+                    ctx.lineTo(x, rulerTop + 24);
+                    ctx.strokeStyle = '#94a3b8';
+                    ctx.stroke();
                 }
 
-                // Vertical numbering (Viewport Sticky Left)
-                for (let y = startY + gridSnap; y <= endY; y += gridSnap) {
-                    const val = Math.floor(y / gridSnap) + 1;
-                    if (y >= 0 && y + gridSnap / 2 < canvas.height + Math.abs(offsetY)) {
-                        ctx.fillText(val.toString(), stickyX, y + gridSnap / 2);
-                    }
+                // --- Left Ruler (Y-Axis) ---
+                for (let f = 0; f <= project.totalBreadth; f += stepFt) {
+                    const y = originY + (f * SCALE);
+
+                    // Optimization: Only draw if visible in viewport Y
+                    if (y < -offsetY - 20 || y > -offsetY + canvas.height + 20) continue;
+
+                    ctx.fillText(f.toString(), rulerLeft + 12, y);
+
+                    // Tick
+                    ctx.beginPath();
+                    ctx.moveTo(rulerLeft + 20, y);
+                    ctx.lineTo(rulerLeft + 24, y);
+                    ctx.strokeStyle = '#94a3b8';
+                    ctx.stroke();
                 }
+
+                // Draw "0,0" corner block
+                ctx.fillStyle = '#f1f5f9';
+                ctx.fillRect(rulerLeft, rulerTop, 24, 24);
+                ctx.strokeRect(rulerLeft, rulerTop, 24, 24);
+                ctx.fillStyle = '#3b82f6';
+                ctx.font = 'bold 10px DM Sans';
+                ctx.fillText('ft', rulerLeft + 12, rulerTop + 12);
             }
             ctx.restore();
         }
@@ -2183,6 +2698,7 @@
         }
 
         function findTarget(x, y) {
+            const isMobile = window.innerWidth <= 992;
             // Check rooms first (top layer)
             for (let i = project.rooms.length - 1; i >= 0; i--) {
                 const r = project.rooms[i];
@@ -2227,8 +2743,10 @@
                         return { type: 'element', data: el };
                     }
                 } else {
-                    // Line hit test
-                    if (isPointNearLine(x, y, el.x1, el.y1, el.x2, el.y2, 10)) {
+                    // Line hit test (Wall, Door, Window, Dimension)
+                    // Increase hit tolerance for easier selection on mobile
+                    const tolerance = isMobile ? 20 : 10;
+                    if (isPointNearLine(x, y, el.x1, el.y1, el.x2, el.y2, tolerance)) {
                         return { type: 'element', data: el };
                     }
                 }
@@ -2745,6 +3263,7 @@
                     ctx.moveTo(x1, y1);
                     ctx.lineTo(x2, y2);
                     ctx.stroke();
+                    drawWallDimension(x1, y1, x2, y2, document.getElementById('wallColor').value);
                     break;
                 case 'door':
                     drawDoor(x1, y1, x2, y2, true);
@@ -2821,6 +3340,37 @@
                     ctx.lineTo(element.x2, element.y2);
                     ctx.stroke();
                     drawWallDimension(element.x1, element.y1, element.x2, element.y2, element.color);
+
+                    // Wall Selection Highlight
+                    if (element === selectedElement) {
+                        ctx.save();
+                        ctx.strokeStyle = '#3b82f6'; // Blue selection color
+                        ctx.lineWidth = 2;
+                        ctx.setLineDash([5, 5]);
+                        // Draw parallel lines on both sides to highlight
+                        const ang = Math.atan2(element.y2 - element.y1, element.x2 - element.x1);
+                        const offset = (element.thickness / 2) + 4;
+
+                        // Side 1
+                        ctx.beginPath();
+                        ctx.moveTo(element.x1 + offset * Math.sin(ang), element.y1 - offset * Math.cos(ang));
+                        ctx.lineTo(element.x2 + offset * Math.sin(ang), element.y2 - offset * Math.cos(ang));
+                        ctx.stroke();
+
+                        // Side 2
+                        ctx.beginPath();
+                        ctx.moveTo(element.x1 - offset * Math.sin(ang), element.y1 + offset * Math.cos(ang));
+                        ctx.lineTo(element.x2 - offset * Math.sin(ang), element.y2 + offset * Math.cos(ang));
+                        ctx.stroke();
+
+                        // Endpoints circles
+                        ctx.fillStyle = '#3b82f6';
+                        ctx.beginPath();
+                        ctx.arc(element.x1, element.y1, 4, 0, Math.PI * 2);
+                        ctx.arc(element.x2, element.y2, 4, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.restore();
+                    }
                     break;
                 case 'door':
                     drawDoor(element.x1, element.y1, element.x2, element.y2, false, element);
@@ -2862,24 +3412,36 @@
             ctx.rotate(textAngle);
 
             // Offset text away from the wall line
-            const offset = -20;
+            const offset = -25;
             ctx.translate(0, offset);
 
-            ctx.font = 'bold 12px DM Sans';
+            // Enhanced font size and styling
+            ctx.font = 'bold 14px DM Sans';
             const text = `${lengthFt} ft`;
             const tw = ctx.measureText(text).width;
-            const padding = 6;
+            const padding = 8;
 
-            // Background Mask
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-            ctx.fillRect(-tw / 2 - padding, -10, tw + padding * 2, 20);
+            // Enhanced Background with shadow
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.2)';
+            ctx.shadowBlur = 4;
+            ctx.shadowOffsetX = 2;
+            ctx.shadowOffsetY = 2;
 
-            // Border
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.98)';
+            ctx.fillRect(-tw / 2 - padding, -12, tw + padding * 2, 24);
+
+            // Reset shadow for border
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 0;
+
+            // Enhanced Border
             ctx.strokeStyle = color;
-            ctx.lineWidth = 1.5;
-            ctx.strokeRect(-tw / 2 - padding, -10, tw + padding * 2, 20);
+            ctx.lineWidth = 2;
+            ctx.strokeRect(-tw / 2 - padding, -12, tw + padding * 2, 24);
 
-            // Text
+            // Text with better contrast
             ctx.fillStyle = color;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
@@ -3102,11 +3664,72 @@
                 return;
             }
 
+            if (symbol.isCompass) {
+                drawCompass(element, symbol);
+                ctx.restore();
+                return;
+            }
+
             ctx.font = `${symbol.height || 30}px Arial`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillText(symbol.emoji, 0, 0); // Draw at (0,0) after translation/rotation
             ctx.restore();
+        }
+
+        function drawCompass(element, config) {
+            const size = (config.width || 60) * (element.scale || 1);
+            const r = size / 2;
+
+            // Draw Compass Circle
+            ctx.beginPath();
+            ctx.arc(0, 0, r, 0, Math.PI * 2);
+            ctx.fillStyle = 'white';
+            ctx.fill();
+            ctx.strokeStyle = '#1e293b';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            // Draw Cross
+            ctx.beginPath();
+            ctx.moveTo(0, -r + 5);
+            ctx.lineTo(0, r - 5);
+            ctx.moveTo(-r + 5, 0);
+            ctx.lineTo(r - 5, 0);
+            ctx.strokeStyle = '#94a3b8';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            // Draw North Arrow (Red Tip)
+            ctx.beginPath();
+            ctx.moveTo(0, -r + 5);
+            ctx.lineTo(-5, -5);
+            ctx.lineTo(5, -5);
+            ctx.closePath();
+            ctx.fillStyle = '#ef4444'; // Red for North
+            ctx.fill();
+
+            // Draw South Arrow (Dark)
+            ctx.beginPath();
+            ctx.moveTo(0, r - 5);
+            ctx.lineTo(-5, 5);
+            ctx.lineTo(5, 5);
+            ctx.closePath();
+            ctx.fillStyle = '#1e293b';
+            ctx.fill();
+
+            // Labels (N, E, S, W)
+            ctx.font = 'bold 12px DM Sans';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            ctx.fillStyle = '#ef4444';
+            ctx.fillText('N', 0, -r - 12); // Above the circle
+
+            ctx.fillStyle = '#1e293b';
+            ctx.fillText('S', 0, r + 12);
+            ctx.fillText('E', r + 12, 0);
+            ctx.fillText('W', -r - 12, 0);
         }
 
         function drawStairs(element, config) {
@@ -3234,34 +3857,33 @@
 
         function redrawAll() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (isExporting) {
+                // FORCE White background (Opaque) for export
+                ctx.save();
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.restore();
+            }
+
             ctx.save();
             ctx.translate(offsetX, offsetY);
 
-            if (project.homeWall) {
+            if (project.homeWall && !isExporting) {
                 const { x, y, width, height } = project.homeWall;
                 ctx.fillStyle = '#f9fafb';
                 ctx.fillRect(x, y, width, height);
             }
 
-            if (showGrid) drawGrid();
+            if (showGrid && !isExporting) drawGrid();
 
-            if (project.homeWall) {
-                const { x, y, width, height } = project.homeWall;
-                // Labels/Meta info
-                ctx.fillStyle = '#1e293b';
-                ctx.font = 'bold 18px DM Sans';
-                ctx.textAlign = 'center';
-                ctx.fillText(project.name, canvas.width / 2, y - 30);
-                ctx.font = '13px DM Sans';
-                ctx.fillStyle = '#64748b';
-                ctx.fillText(`${project.totalLength}' × ${project.totalBreadth}' ${project.type}`, canvas.width / 2, y - 10);
-            }
+            // Meta info removed
 
             drawAllRooms();
 
-            // Unified Structural Wall Pass (Merging Boundary + Rooms + Manual Walls)
+            // Unified Structural Wall Pass
             const wallThick = parseInt(document.getElementById('wallThickness').value) || 6;
-            const wallColor = document.getElementById('wallColor').value || '#1e293b';
+            const wallColor = isExporting ? '#000000' : (document.getElementById('wallColor').value || '#1e293b');
             const segments = new Set();
 
             const addSegment = (x1, y1, x2, y2, specialThick = null) => {
@@ -3270,7 +3892,7 @@
                 const p2 = `${r(x2)},${r(y2)}|${r(x1)},${r(y1)}`;
                 if (!segments.has(p1) && !segments.has(p2)) {
                     ctx.strokeStyle = wallColor;
-                    ctx.lineWidth = specialThick || wallThick;
+                    ctx.lineWidth = specialThick || (isExporting ? 4 : wallThick); // Thicker walls for print
                     ctx.lineCap = 'square';
                     ctx.beginPath();
                     ctx.moveTo(x1, y1);
@@ -3302,6 +3924,39 @@
             elements.forEach(element => {
                 if (element.type === 'wall') {
                     addSegment(element.x1, element.y1, element.x2, element.y2);
+                    drawWallDimension(element.x1, element.y1, element.x2, element.y2, element.color);
+
+                    // Draw Selection Highlight for Wall
+                    if (element === selectedElement) {
+                        ctx.save();
+                        ctx.strokeStyle = '#3b82f6'; // Blue selection color
+                        ctx.lineWidth = 2;
+                        ctx.setLineDash([5, 5]);
+
+                        const ang = Math.atan2(element.y2 - element.y1, element.x2 - element.x1);
+                        const thick = element.thickness || parseInt(document.getElementById('wallThickness').value) || 6;
+                        const offset = (thick / 2) + 4;
+
+                        // Side 1
+                        ctx.beginPath();
+                        ctx.moveTo(element.x1 + offset * Math.sin(ang), element.y1 - offset * Math.cos(ang));
+                        ctx.lineTo(element.x2 + offset * Math.sin(ang), element.y2 - offset * Math.cos(ang));
+                        ctx.stroke();
+
+                        // Side 2
+                        ctx.beginPath();
+                        ctx.moveTo(element.x1 - offset * Math.sin(ang), element.y1 + offset * Math.cos(ang));
+                        ctx.lineTo(element.x2 - offset * Math.sin(ang), element.y2 + offset * Math.cos(ang));
+                        ctx.stroke();
+
+                        // Endpoints
+                        ctx.fillStyle = '#3b82f6';
+                        ctx.beginPath();
+                        ctx.arc(element.x1, element.y1, 4, 0, Math.PI * 2);
+                        ctx.arc(element.x2, element.y2, 4, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.restore();
+                    }
                 } else {
                     drawElement(element);
                 }
