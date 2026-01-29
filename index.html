@@ -1123,6 +1123,9 @@
                         <button class="btn btn-secondary btn-icon" onclick="toggleRotation()" title="Rotate View">
                             <span>🔄</span>
                         </button>
+                        <button class="btn btn-secondary btn-icon" onclick="fitToScreen()" title="Fit to Screen">
+                            <span>⛶</span>
+                        </button>
                         <button class="btn btn-secondary btn-icon" id="gridNumberToggle" onclick="toggleGridNumbers()"
                             title="Toggle Grid Numbers">
                             <span>🔢</span>
@@ -2315,18 +2318,16 @@
             gridSnap = gridValue * SCALE;
 
             if (project.homeWall) {
-                // To keep elements and rooms consistent, we would need to scale their positions.
-                // For now, we'll re-calculate home wall and trigger redraw.
-                // Note: The previous implementation deleted rooms; we'll keep them but they might shift.
-                // A better approach would be storing coordinates in feet.
+                const ratio = SCALE / oldScale;
+
+                // Keep the center of the project at the center of the canvas
                 project.homeWall.width = project.totalLength * SCALE;
                 project.homeWall.height = project.totalBreadth * SCALE;
                 project.homeWall.x = (canvas.width - project.homeWall.width) / 2;
                 project.homeWall.y = (canvas.height - project.homeWall.height) / 2;
 
-                // Scale existing components
-                const ratio = SCALE / oldScale;
                 project.rooms.forEach(room => {
+                    // Coordinates relative to homeWall origin (top-left)
                     const relX = (room.x - (canvas.width - project.totalLength * oldScale) / 2) * ratio;
                     const relY = (room.y - (canvas.height - project.totalBreadth * oldScale) / 2) * ratio;
 
@@ -2346,7 +2347,7 @@
                         el.x2 = relX2 + project.homeWall.x;
                         el.y1 = relY1 + project.homeWall.y;
                         el.y2 = relY2 + project.homeWall.y;
-                    } else if (el.type === 'symbol' || el.type === 'text') {
+                    } else {
                         const relX = (el.x - (canvas.width - project.totalLength * oldScale) / 2) * ratio;
                         const relY = (el.y - (canvas.height - project.totalBreadth * oldScale) / 2) * ratio;
                         el.x = relX + project.homeWall.x;
@@ -2355,6 +2356,24 @@
                 });
             }
             redrawAll();
+        }
+
+        function fitToScreen() {
+            if (!project.homeWall) return;
+
+            const padding = 40;
+            const availableWidth = canvas.width - padding;
+            const availableHeight = canvas.height - padding;
+
+            const scaleX = availableWidth / project.totalLength;
+            const scaleY = availableHeight / project.totalBreadth;
+
+            let optimalScale = Math.floor(Math.min(scaleX, scaleY));
+            optimalScale = Math.max(5, Math.min(30, optimalScale));
+
+            document.getElementById('zoomRange').value = optimalScale;
+            updateScale();
+            showToast('📏', 'Fit to screen');
         }
 
         function toggleRotation() {
