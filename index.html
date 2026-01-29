@@ -927,9 +927,7 @@
             </div>
 
             <div class="header-actions">
-                <button class="btn btn-primary" onclick="openProjectModal()">
-                    <span>📄</span> <span>Reset Project</span>
-                </button>
+
                 <button class="btn btn-secondary btn-icon" onclick="undo()" title="Undo (Ctrl+Z)">
                     <span>↶</span>
                 </button>
@@ -947,7 +945,7 @@
                 </button>
                 <button id="viewToggleBtn" class="btn btn-primary" onclick="toggle3DView()"
                     style="background: linear-gradient(135deg, #7c3aed, #2563eb); border: none; box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);">
-                    <span>🏠</span> <span id="viewToggleText">3D View</span>
+                    <span>🏠</span> <span id="viewToggleText">3D</span>
                 </button>
             </div>
         </header>
@@ -989,49 +987,60 @@
                     </div>
                 </div>
 
-                <!-- Rooms Section -->
+
+                <!-- Templates Library -->
                 <div class="sidebar-section">
                     <div class="sidebar-title">
-                        <span>🏠</span> Rooms
+                        <span>🏗️</span> Quick Templates
                     </div>
-
-                    <div class="room-item" onclick="selectRoom('bedroom')" id="room-bedroom">
-                        <span class="room-icon">🛏️</span>
-                        <div class="room-info">
-                            <div class="room-name">Bedroom</div>
-                            <div class="room-size" id="bedroom-size">Click to set size</div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                        <div class="symbol-item" draggable="true" ondragstart="dragSymbol(event, 'template_hall')"
+                            style="padding: 8px;">
+                            <span class="symbol-icon"
+                                style="background: rgba(139, 92, 246, 0.1); color: #8b5cf6; font-size: 16px;">🏛️</span>
+                            <div class="symbol-info">
+                                <div class="symbol-name" style="font-size: 11px;">Hall</div>
+                            </div>
                         </div>
-                    </div>
-
-                    <div class="room-item" onclick="selectRoom('kitchen')" id="room-kitchen">
-                        <span class="room-icon">🍳</span>
-                        <div class="room-info">
-                            <div class="room-name">Kitchen</div>
-                            <div class="room-size" id="kitchen-size">Click to set size</div>
+                        <div class="symbol-item" draggable="true" ondragstart="dragSymbol(event, 'template_sitting')"
+                            style="padding: 8px;">
+                            <span class="symbol-icon"
+                                style="background: rgba(244, 63, 94, 0.1); color: #f43f5e; font-size: 16px;">🛋️</span>
+                            <div class="symbol-info">
+                                <div class="symbol-name" style="font-size: 11px;">Sitting</div>
+                            </div>
                         </div>
-                    </div>
-
-                    <div class="room-item" onclick="selectRoom('toilet')" id="room-toilet">
-                        <span class="room-icon">🚽</span>
-                        <div class="room-info">
-                            <div class="room-name">Toilet</div>
-                            <div class="room-size" id="toilet-size">Click to set size</div>
+                        <div class="symbol-item" draggable="true" ondragstart="dragSymbol(event, 'template_kitchen')"
+                            style="padding: 8px;">
+                            <span class="symbol-icon"
+                                style="background: rgba(245, 158, 11, 0.1); color: #f59e0b; font-size: 16px;">🍳</span>
+                            <div class="symbol-info">
+                                <div class="symbol-name" style="font-size: 11px;">Kitchen</div>
+                            </div>
                         </div>
-                    </div>
-
-                    <div class="room-item" onclick="selectRoom('hall')" id="room-hall">
-                        <span class="room-icon">🏛️</span>
-                        <div class="room-info">
-                            <div class="room-name">Hall</div>
-                            <div class="room-size" id="hall-size">Click to set size</div>
+                        <div class="symbol-item" draggable="true" ondragstart="dragSymbol(event, 'template_toilet')"
+                            style="padding: 8px;">
+                            <span class="symbol-icon"
+                                style="background: rgba(6, 182, 212, 0.1); color: #06b6d4; font-size: 16px;">🚽</span>
+                            <div class="symbol-info">
+                                <div class="symbol-name" style="font-size: 11px;">Toilet</div>
+                            </div>
                         </div>
-                    </div>
-
-                    <div class="room-item" onclick="selectRoom('veranda')" id="room-veranda">
-                        <span class="room-icon">🌿</span>
-                        <div class="room-info">
-                            <div class="room-name">Veranda</div>
-                            <div class="room-size" id="veranda-size">Click to set size</div>
+                        <div class="symbol-item" draggable="true" ondragstart="dragSymbol(event, 'template_veranda')"
+                            style="padding: 8px;">
+                            <span class="symbol-icon"
+                                style="background: rgba(16, 185, 129, 0.1); color: #10b981; font-size: 16px;">🌿</span>
+                            <div class="symbol-info">
+                                <div class="symbol-name" style="font-size: 11px;">Veranda</div>
+                            </div>
+                        </div>
+                        <div class="symbol-item" draggable="true" ondragstart="dragSymbol(event, 'template_bedroom')"
+                            style="padding: 8px;">
+                            <span class="symbol-icon"
+                                style="background: rgba(59, 130, 246, 0.1); color: #3b82f6; font-size: 16px;">🛏️</span>
+                            <div class="symbol-info">
+                                <div class="symbol-name" style="font-size: 11px;">Bedroom</div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1529,6 +1538,7 @@
         let dragOffsetX = 0;
         let dragOffsetY = 0;
         let isMovingElement = false;
+        let isResizing = false;
         let initialPinchDist = 0;
         let initialPinchScale = 0;
 
@@ -1552,7 +1562,8 @@
             kitchen: { icon: '🍳', name: 'Kitchen', defaultLength: 10, defaultBreadth: 8, color: '#f59e0b' },
             toilet: { icon: '🚽', name: 'Toilet', defaultLength: 6, defaultBreadth: 5, color: '#06b6d4' },
             hall: { icon: '🏛️', name: 'Hall', defaultLength: 15, defaultBreadth: 12, color: '#8b5cf6' },
-            veranda: { icon: '🌿', name: 'Veranda', defaultLength: 8, defaultBreadth: 4, color: '#10b981' }
+            veranda: { icon: '🌿', name: 'Veranda', defaultLength: 8, defaultBreadth: 4, color: '#10b981' },
+            sitting: { icon: '🛋️', name: 'Sitting Area', defaultLength: 12, defaultBreadth: 12, color: '#f43f5e' }
         };
 
         // Symbol/Furniture definitions
@@ -1596,7 +1607,6 @@
             canvas.addEventListener('mousedown', handleMouseDown);
             canvas.addEventListener('mousemove', handleMouseMove);
             canvas.addEventListener('mouseup', handleMouseUp);
-            canvas.addEventListener('click', handleCanvasClick);
 
             // Touch events for mobile
             canvas.addEventListener('touchstart', (e) => {
@@ -1965,87 +1975,12 @@
             redrawAll();
         }
 
-        // Room Modal Functions
-        function selectRoom(roomType) {
-            if (!project.homeWall) {
-                showToast('⚠️', 'Please create a project first!');
-                openProjectModal();
-                return;
-            }
-
-            selectedRoomType = roomType;
-            const config = roomConfig[roomType];
-
-            // Update modal
-            document.getElementById('roomModalIcon').textContent = config.icon;
-            document.getElementById('roomModalTitle').textContent = config.name;
-            document.getElementById('roomNameBadge').textContent = config.name;
-            document.getElementById('roomName').value = '';
-            document.getElementById('roomName').placeholder = config.name;
-            document.getElementById('roomLength').value = config.defaultLength;
-            document.getElementById('roomBreadth').value = config.defaultBreadth;
-            document.getElementById('roomColor').value = config.color;
-
-            document.getElementById('roomModal').classList.add('active');
-        }
-
-        function closeRoomModal() {
-            document.getElementById('roomModal').classList.remove('active');
-            selectedRoomType = null;
-            placingRoom = false;
-            document.querySelectorAll('.room-item').forEach(item => item.classList.remove('placing'));
-        }
-
-        function saveRoom() {
-            const roomName = document.getElementById('roomName').value || roomConfig[selectedRoomType].name;
-            const length = parseInt(document.getElementById('roomLength').value);
-            const breadth = parseInt(document.getElementById('roomBreadth').value);
-            const color = document.getElementById('roomColor').value;
-
-            if (!length || !breadth) {
-                alert('Please enter valid dimensions');
-                return;
-            }
-
-            // Check if room fits
-            if (length > project.totalLength || breadth > project.totalBreadth) {
-                alert(`Room is too large! Maximum: ${project.totalLength}' × ${project.totalBreadth}'`);
-                return;
-            }
-
-            currentRoom = {
-                type: selectedRoomType,
-                name: roomName,
-                length: length,
-                breadth: breadth,
-                width: length * SCALE,
-                height: breadth * SCALE,
-                color: color,
-                icon: roomConfig[selectedRoomType].icon
-            };
-
-            placingRoom = true;
-            closeRoomModal();
-
-            // Update room size display
-            document.getElementById(`${selectedRoomType}-size`).textContent = `${length}' × ${breadth}'`;
-
-            // Highlight the room being placed
-            document.getElementById(`room-${selectedRoomType}`).classList.add('placing');
-
-            // Close mobile menu if open
-            if (document.getElementById('sidebarLeft').classList.contains('mobile-active')) toggleMobileMenu();
-
-            showToast('📍', 'Click inside the home boundary to place the room');
-        }
 
         // Tool Selection
         function selectTool(tool) {
             currentTool = tool;
-            placingRoom = false;
             document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
             document.getElementById(`tool-${tool}`).classList.add('active');
-            document.querySelectorAll('.room-item').forEach(item => item.classList.remove('placing'));
 
             if (tool === 'select') {
                 canvas.style.cursor = 'default';
@@ -2108,13 +2043,40 @@
         }
 
         function handleMouseDown(e) {
-            if (placingRoom) return;
 
             const pos = getMousePos(e);
             startX = snapToGrid(pos.x);
             startY = snapToGrid(pos.y);
 
             if (currentTool === 'select') {
+                // Check for resize handle first
+                if (selectedRoom) {
+                    const handleX = selectedRoom.x + selectedRoom.width;
+                    const handleY = selectedRoom.y + selectedRoom.height;
+                    if (Math.abs(pos.x - handleX) < 15 && Math.abs(pos.y - handleY) < 15) {
+                        isResizing = true;
+                        canvas.style.cursor = 'nwse-resize';
+                        saveState();
+                        return;
+                    }
+                } else if (selectedElement?.type === 'symbol') {
+                    const config = symbols[selectedElement.symbolType];
+                    if (config?.isStair) {
+                        const s = SCALE * (selectedElement.scale || 1);
+                        const w = (selectedElement.width || config.width) * s;
+                        const l = (selectedElement.length || config.length) * s;
+                        // Calculate handle position relative to element's center (x,y)
+                        const handleX = selectedElement.x + w / 2;
+                        const handleY = selectedElement.y + l / 2;
+                        if (Math.abs(pos.x - handleX) < 15 && Math.abs(pos.y - handleY) < 15) {
+                            isResizing = true;
+                            canvas.style.cursor = 'nwse-resize';
+                            saveState();
+                            return;
+                        }
+                    }
+                }
+
                 const target = findTarget(pos.x, pos.y);
                 if (target) {
                     if (target.type === 'room') {
@@ -2387,11 +2349,72 @@
             const currentX = pos.x;
             const currentY = pos.y;
 
+            if (isResizing) {
+                canvas.style.cursor = 'nwse-resize';
+                if (selectedRoom) {
+                    const newW = Math.max(2, (currentX - selectedRoom.x) / SCALE);
+                    const newH = Math.max(2, (currentY - selectedRoom.y) / SCALE);
+                    selectedRoom.length = Math.round(newW * 2) / 2;
+                    selectedRoom.breadth = Math.round(newH * 2) / 2;
+                    selectedRoom.width = selectedRoom.length * SCALE;
+                    selectedRoom.height = selectedRoom.breadth * SCALE;
+                } else if (selectedElement?.type === 'symbol') {
+                    const config = symbols[selectedElement.symbolType];
+                    const s = SCALE;
+                    if (config?.isStair) {
+                        if (config.stairType === 'spiral') {
+                            // Update radius based on distance from center
+                            const dist = Math.sqrt(Math.pow(currentX - selectedElement.x, 2) + Math.pow(currentY - selectedElement.y, 2));
+                            selectedElement.radius = Math.max(1, (dist / s));
+                        } else {
+                            // Straight or L-Shape
+                            const newW = Math.max(2, (currentX - selectedElement.x) * 2 / s);
+                            const newL = Math.max(2, (currentY - selectedElement.y) * 2 / s);
+
+                            if (config.stairType === 'straight') {
+                                selectedElement.width = Math.round(newW * 2) / 2;
+                                selectedElement.length = Math.round(newL * 2) / 2;
+                                selectedElement.steps = Math.round(selectedElement.length);
+                            } else if (config.stairType === 'lshape') {
+                                // For L-shape, 'width' is the run thickness, 'length' is first run, 'breadth' is second
+                                // We'll map horizontal drag to breadth and vertical to length
+                                selectedElement.length = Math.round(newL * 2) / 2;
+                                selectedElement.breadth = Math.round(newW * 2) / 2;
+                                selectedElement.steps = Math.round(selectedElement.length + selectedElement.breadth);
+                            }
+                        }
+                    }
+                }
+                redrawAll();
+                return;
+            }
+
             if (isMovingElement) {
                 canvas.style.cursor = 'grabbing';
                 if (selectedRoom) {
-                    selectedRoom.x = snapToGrid(currentX - dragOffsetX);
-                    selectedRoom.y = snapToGrid(currentY - dragOffsetY);
+                    let nextX = snapToGrid(currentX - dragOffsetX);
+                    let nextY = snapToGrid(currentY - dragOffsetY);
+
+                    // Boundary Snapping to Neighbors
+                    project.rooms.forEach(other => {
+                        if (other === selectedRoom) return;
+                        const snapDist = 15; // 1 foot snap range
+
+                        // Vertical edge snaps (X)
+                        if (Math.abs(nextX - other.x) < snapDist) nextX = other.x;
+                        if (Math.abs(nextX - (other.x + other.width)) < snapDist) nextX = other.x + other.width;
+                        if (Math.abs((nextX + selectedRoom.width) - other.x) < snapDist) nextX = other.x - selectedRoom.width;
+                        if (Math.abs((nextX + selectedRoom.width) - (other.x + other.width)) < snapDist) nextX = other.x + other.width - selectedRoom.width;
+
+                        // Horizontal edge snaps (Y)
+                        if (Math.abs(nextY - other.y) < snapDist) nextY = other.y;
+                        if (Math.abs(nextY - (other.y + other.height)) < snapDist) nextY = other.y + other.height;
+                        if (Math.abs((nextY + selectedRoom.height) - other.y) < snapDist) nextY = other.y - selectedRoom.height;
+                        if (Math.abs((nextY + selectedRoom.height) - (other.y + other.height)) < snapDist) nextY = other.y + other.height - selectedRoom.height;
+                    });
+
+                    selectedRoom.x = nextX;
+                    selectedRoom.y = nextY;
                 } else if (selectedElement) {
                     if (selectedElement.type === 'text' || selectedElement.type === 'symbol') {
                         selectedElement.x = snapToGrid(currentX - dragOffsetX);
@@ -2412,7 +2435,27 @@
             // Update cursor based on hover
             if (currentTool === 'select') {
                 const target = findTarget(pos.x, pos.y);
-                canvas.style.cursor = target ? 'grab' : 'default';
+
+                // Check if hovering over resize handle
+                let onHandle = false;
+                if (selectedRoom) {
+                    const handleX = selectedRoom.x + selectedRoom.width;
+                    const handleY = selectedRoom.y + selectedRoom.height;
+                    if (Math.abs(pos.x - handleX) < 15 && Math.abs(pos.y - handleY) < 15) onHandle = true;
+                } else if (selectedElement?.type === 'symbol') {
+                    const config = symbols[selectedElement.symbolType];
+                    if (config?.isStair) {
+                        const s = SCALE;
+                        const w = (selectedElement.width || config.width) * s;
+                        const l = (selectedElement.length || config.length) * s;
+                        const handleX = selectedElement.x + w / 2;
+                        const handleY = selectedElement.y + l / 2;
+                        if (Math.abs(pos.x - handleX) < 15 && Math.abs(pos.y - handleY) < 15) onHandle = true;
+                    }
+                }
+
+                if (onHandle) canvas.style.cursor = 'nwse-resize';
+                else canvas.style.cursor = target ? 'grab' : 'default';
             } else {
                 canvas.style.cursor = 'crosshair';
             }
@@ -2424,6 +2467,13 @@
         }
 
         function handleMouseUp(e) {
+            if (isResizing) {
+                isResizing = false;
+                canvas.style.cursor = 'default';
+                redrawAll();
+                updateDimensionDisplay();
+                return;
+            }
             if (isMovingElement) {
                 isMovingElement = false;
                 canvas.style.cursor = 'default';
@@ -2450,65 +2500,50 @@
             redrawAll();
         }
 
-        function handleCanvasClick(e) {
-            if (!placingRoom || !currentRoom || !project.homeWall) return;
-
-            const pos = getMousePos(e);
-            const clickX = pos.x;
-            const clickY = pos.y;
-
-            // Check if click is inside home boundary
-            const { x, y, width, height } = project.homeWall;
-
-            if (clickX >= x + 15 && clickX <= x + width - 15 &&
-                clickY >= y + 15 && clickY <= y + height - 15) {
-
-                // Snap to grid
-                const gridSize = 5 * SCALE;
-                const roomX = Math.round((clickX - x) / gridSize) * gridSize + x;
-                const roomY = Math.round((clickY - y) / gridSize) * gridSize + y;
-
-                // Check if room fits at this position
-                if (roomX + currentRoom.width <= x + width - 10 &&
-                    roomY + currentRoom.height <= y + height - 10) {
-
-                    saveState(); // Save state before placing room
-
-                    currentRoom.x = roomX;
-                    currentRoom.y = roomY;
-
-                    project.rooms.push(currentRoom);
-
-                    // Update displays
-                    updateDimensionDisplay();
-                    updateLayerCounts();
-                    redrawAll();
-
-                    placingRoom = false;
-                    currentRoom = null;
-                    document.querySelectorAll('.room-item').forEach(item => item.classList.remove('placing'));
-
-                    showToast('✓', 'Room placed successfully!');
-                } else {
-                    showToast('⚠️', 'Room doesn\'t fit at this position!');
-                }
-            } else {
-                showToast('⚠️', 'Please click inside the home boundary!');
-            }
-        }
 
         function handleDrop(e) {
             e.preventDefault();
             const symbolType = e.dataTransfer.getData('symbol');
-            if (!symbolType || !symbols[symbolType]) {
-                showToast('❌', 'Invalid furniture/symbol');
-                return;
-            }
+
+            if (!symbolType) return;
             const pos = getMousePos(e);
             const x = snapToGrid(pos.x);
             const y = snapToGrid(pos.y);
 
-            saveState(); // Save state before dropping symbol
+            saveState();
+
+            // Handle Quick Templates generically
+            if (symbolType.startsWith('template_')) {
+                const roomKey = symbolType.replace('template_', '');
+                const config = roomConfig[roomKey];
+
+                if (config) {
+                    const newRoom = {
+                        type: roomKey,
+                        name: config.name,
+                        length: config.defaultLength,
+                        breadth: config.defaultBreadth,
+                        width: config.defaultLength * SCALE,
+                        height: config.defaultBreadth * SCALE,
+                        color: config.color,
+                        icon: config.icon,
+                        x: x,
+                        y: y
+                    };
+                    project.rooms.push(newRoom);
+                    redrawAll();
+                    updateDimensionDisplay();
+                    updateLayerCounts();
+                    showToast(config.icon, `${config.name} template placed`);
+                    return;
+                }
+            }
+
+            if (!symbols[symbolType]) {
+                showToast('❌', 'Invalid furniture/symbol');
+                return;
+            }
+
             addSymbol(symbolType, x, y);
         }
 
@@ -2521,6 +2556,35 @@
         }
 
         function addElement(type, x1, y1, x2, y2) {
+            // Check for duplicate walls (Manual or Template)
+            if (type === 'wall') {
+                // 1. Check against existing manual walls
+                const isManualDuplicate = elements.some(el => {
+                    if (el.type !== 'wall') return false;
+                    const sameDir = (el.x1 === x1 && el.y1 === y1 && el.x2 === x2 && el.y2 === y2);
+                    const oppDir = (el.x1 === x2 && el.y1 === y2 && el.x2 === x1 && el.y2 === y1);
+                    return sameDir || oppDir;
+                });
+                if (isManualDuplicate) return;
+
+                // 2. Check against Room template edges
+                const isTemplateDuplicate = project.rooms.some(room => {
+                    const rX1 = room.x, rY1 = room.y, rX2 = room.x + room.width, rY2 = room.y + room.height;
+                    const edges = [
+                        { x1: rX1, y1: rY1, x2: rX2, y2: rY1 }, // North
+                        { x1: rX1, y1: rY2, x2: rX2, y2: rY2 }, // South
+                        { x1: rX1, y1: rY1, x2: rX1, y2: rY2 }, // West
+                        { x1: rX2, y1: rY1, x2: rX2, y2: rY2 }  // East
+                    ];
+                    return edges.some(edge => {
+                        const sameDir = (edge.x1 === x1 && edge.y1 === y1 && edge.x2 === x2 && edge.y2 === y2);
+                        const oppDir = (edge.x1 === x2 && edge.y1 === y2 && edge.x2 === x1 && edge.y2 === y1);
+                        return sameDir || oppDir;
+                    });
+                });
+                if (isTemplateDuplicate) return;
+            }
+
             const element = {
                 type: type,
                 x1: x1,
@@ -2634,6 +2698,12 @@
                         h = config.height * (element.scale || 1);
                     }
                     ctx.strokeRect(-w / 2 - 5, -h / 2 - 5, w + 10, h + 10);
+
+                    // Draw Resize Handle for Stairs
+                    if (config?.isStair) {
+                        ctx.fillStyle = '#ef4444';
+                        ctx.fillRect(w / 2, h / 2, 12, 12);
+                    }
                     ctx.restore();
                 } else if (element.x1 !== undefined) {
                     // Calculate distance and angle for line-based elements
@@ -3039,17 +3109,25 @@
         }
 
         function drawAllRooms() {
+            // pass 1: Backgrounds
             project.rooms.forEach(room => {
-                ctx.fillStyle = room.color + '30';
+                ctx.fillStyle = room.color + '20';
                 ctx.fillRect(room.x, room.y, room.width, room.height);
-                ctx.strokeStyle = room.color;
-                ctx.lineWidth = (room === selectedRoom) ? 6 : 4;
+            });
+
+            // pass 2: Labels Only (Walls are handled in redrawAll unified pass)
+            project.rooms.forEach(room => {
                 if (room === selectedRoom) {
+                    const wallThick = parseInt(document.getElementById('wallThickness').value) || 6;
+                    ctx.save();
                     ctx.setLineDash([5, 5]);
                     ctx.strokeStyle = '#ef4444';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(room.x - wallThick / 2 - 4, room.y - wallThick / 2 - 4, room.width + wallThick + 8, room.height + wallThick + 8);
+                    ctx.fillStyle = '#ef4444';
+                    ctx.fillRect(room.x + room.width + wallThick / 2 - 6, room.y + room.height + wallThick / 2 - 6, 12, 12);
+                    ctx.restore();
                 }
-                ctx.strokeRect(room.x, room.y, room.width, room.height);
-                ctx.setLineDash([]); // Reset dash
 
                 ctx.font = '32px Arial';
                 ctx.textAlign = 'center';
@@ -3079,9 +3157,7 @@
 
             if (project.homeWall) {
                 const { x, y, width, height } = project.homeWall;
-                ctx.strokeStyle = '#1e293b';
-                ctx.lineWidth = 10;
-                ctx.strokeRect(x, y, width, height);
+                // Labels/Meta info
                 ctx.fillStyle = '#1e293b';
                 ctx.font = 'bold 18px DM Sans';
                 ctx.textAlign = 'center';
@@ -3090,8 +3166,57 @@
                 ctx.fillStyle = '#64748b';
                 ctx.fillText(`${project.totalLength}' × ${project.totalBreadth}' ${project.type}`, canvas.width / 2, y - 10);
             }
+
             drawAllRooms();
-            elements.forEach(element => drawElement(element));
+
+            // Unified Structural Wall Pass (Merging Boundary + Rooms + Manual Walls)
+            const wallThick = parseInt(document.getElementById('wallThickness').value) || 6;
+            const wallColor = document.getElementById('wallColor').value || '#1e293b';
+            const segments = new Set();
+
+            const addSegment = (x1, y1, x2, y2, specialThick = null) => {
+                const r = v => Math.round(v);
+                const p1 = `${r(x1)},${r(y1)}|${r(x2)},${r(y2)}`;
+                const p2 = `${r(x2)},${r(y2)}|${r(x1)},${r(y1)}`;
+                if (!segments.has(p1) && !segments.has(p2)) {
+                    ctx.strokeStyle = wallColor;
+                    ctx.lineWidth = specialThick || wallThick;
+                    ctx.lineCap = 'square';
+                    ctx.beginPath();
+                    ctx.moveTo(x1, y1);
+                    ctx.lineTo(x2, y2);
+                    ctx.stroke();
+                    segments.add(p1);
+                }
+            };
+
+            // 1. Process Home Boundary first
+            if (project.homeWall) {
+                const { x, y, width, height } = project.homeWall;
+                addSegment(x, y, x + width, y, 10); // North
+                addSegment(x, y + height, x + width, y + height, 10); // South
+                addSegment(x, y, x, y + height, 10); // West
+                addSegment(x + width, y, x + width, y + height, 10); // East
+            }
+
+            // 2. Process room walls
+            project.rooms.forEach(room => {
+                const rx1 = room.x, ry1 = room.y, rx2 = room.x + room.width, ry2 = room.y + room.height;
+                addSegment(rx1, ry1, rx2, ry1); // North
+                addSegment(rx1, ry2, rx2, ry2); // South
+                addSegment(rx1, ry1, rx1, ry2); // West
+                addSegment(rx2, ry1, rx2, ry2); // East
+            });
+
+            // 3. Process manual walls
+            elements.forEach(element => {
+                if (element.type === 'wall') {
+                    addSegment(element.x1, element.y1, element.x2, element.y2);
+                } else {
+                    drawElement(element);
+                }
+            });
+
             ctx.restore();
         }
 
@@ -3290,7 +3415,7 @@
             const sidebar = document.getElementById('sidebarLeft');
 
             if (is3DMode) {
-                btnText.textContent = '2D View';
+                btnText.textContent = '2D';
                 canvasEl.style.display = 'none';
                 container.style.display = 'block';
                 // Deactivate tools
@@ -3301,7 +3426,7 @@
                 init3D();
                 showToast('🏠', 'Interactive 3D View Active');
             } else {
-                btnText.textContent = '3D View';
+                btnText.textContent = '3D';
                 canvasEl.style.display = 'block';
                 container.style.display = 'none';
                 sidebar.style.pointerEvents = 'auto';
@@ -3387,26 +3512,46 @@
             create3DWall(-totalW3d / 2, -totalH3d / 2, -totalW3d / 2, totalH3d / 2, 10 * unit, 4, 0x1e293b); // West
             create3DWall(totalW3d / 2, -totalH3d / 2, totalW3d / 2, totalH3d / 2, 10 * unit, 4, 0x1e293b); // East
 
-            // Rooms Floors
+            // Rooms Floors and Walls with De-duplication
+            const globalThick = parseInt(document.getElementById('wallThickness').value) || 6;
+            const globalWallColor = document.getElementById('wallColor').value || '#1e293b';
+            const wallRegistry = new Set();
+
+            function addStructuralWall(x1, z1, x2, z2, h, t, c) {
+                const r = v => Math.round(v);
+                const p1 = `${r(x1)},${r(z1)}|${r(x2)},${r(z2)}`;
+                const p2 = `${r(x2)},${r(z2)}|${r(x1)},${r(z1)}`;
+                if (wallRegistry.has(p1) || wallRegistry.has(p2)) return;
+                create3DWall(x1, z1, x2, z2, h, t, c);
+                wallRegistry.add(p1);
+            }
+
             project.rooms.forEach(room => {
                 const start = pxTo3d(room.x, room.y);
                 const rW3d = room.length * unit;
                 const rH3d = room.breadth * unit;
+                const thick3d = globalThick * (unit / 15);
 
                 const rGeo = new THREE.PlaneGeometry(rW3d, rH3d);
-                const rMat = new THREE.MeshStandardMaterial({ color: room.color, transparent: true, opacity: 0.4 });
+                const rMat = new THREE.MeshStandardMaterial({ color: room.color, transparent: true, opacity: 0.25 });
                 const rMesh = new THREE.Mesh(rGeo, rMat);
                 rMesh.rotation.x = -Math.PI / 2;
                 rMesh.position.set(start.x + rW3d / 2, 0.5, start.z + rH3d / 2);
                 rMesh.receiveShadow = true;
                 scene3D.add(rMesh);
 
+                const wallH = 10 * unit;
+                addStructuralWall(start.x, start.z, start.x + rW3d, start.z, wallH, thick3d, globalWallColor);
+                addStructuralWall(start.x, start.z + rH3d, start.x + rW3d, start.z + rH3d, wallH, thick3d, globalWallColor);
+                addStructuralWall(start.x, start.z, start.x, start.z + rH3d, wallH, thick3d, globalWallColor);
+                addStructuralWall(start.x + rW3d, start.z, start.x + rW3d, start.z + rH3d, wallH, thick3d, globalWallColor);
+
                 const sprite = createEmojiSprite(room.icon || '🏠', 40);
                 sprite.position.set(start.x + rW3d / 2, 60, start.z + rH3d / 2);
                 scene3D.add(sprite);
             });
 
-            // Internal Elements
+            // Internal Elements (Manual Walls/Doors/Windows) with De-duplication
             elements.forEach(el => {
                 if (el.type === 'wall' || el.type === 'door' || el.type === 'window') {
                     const p1 = pxTo3d(el.x1, el.y1);
@@ -3414,15 +3559,23 @@
                     const thick = (el.thickness || 8) * (unit / 15);
 
                     if (el.type === 'wall') {
-                        create3DWall(p1.x, p1.z, p2.x, p2.z, 10 * unit, thick, el.color || 0x475569);
+                        addStructuralWall(p1.x, p1.z, p2.x, p2.z, 10 * unit, thick, el.color || 0x475569);
                     } else if (el.type === 'door') {
-                        create3DWall(p1.x, p1.z, p2.x, p2.z, 7 * unit, thick, 0x78350f); // Brown wood
+                        // Doors and Windows are specific, we still use registry to prevent double-doors
+                        const pKey = `${Math.round(p1.x)},${Math.round(p1.z)}|${Math.round(p2.x)},${Math.round(p2.z)}`;
+                        if (!wallRegistry.has(pKey)) {
+                            create3DWall(p1.x, p1.z, p2.x, p2.z, 7 * unit, thick, 0x78350f); // Brown
+                            wallRegistry.add(pKey);
+                        }
                     } else if (el.type === 'window') {
-                        // Create window as semi-transparent glass
-                        const win = create3DWall(p1.x, p1.z, p2.x, p2.z, 5 * unit, thick + 1, 0xbae6fd); // Sky blue
-                        win.material.transparent = true;
-                        win.material.opacity = 0.6;
-                        win.position.y = 5.5 * unit;
+                        const pKey = `${Math.round(p1.x)},${Math.round(p1.z)}|${Math.round(p2.x)},${Math.round(p2.z)}`;
+                        if (!wallRegistry.has(pKey)) {
+                            const win = create3DWall(p1.x, p1.z, p2.x, p2.z, 5 * unit, thick + 1, 0xbae6fd);
+                            win.material.transparent = true;
+                            win.material.opacity = 0.6;
+                            win.position.y = 5.5 * unit;
+                            wallRegistry.add(pKey);
+                        }
                     }
                 } else if (el.type === 'symbol') {
                     const center = pxTo3d(el.x, el.y);
