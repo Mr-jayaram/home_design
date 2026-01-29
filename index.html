@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -52,6 +53,7 @@
             align-items: center;
             justify-content: space-between;
             box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            z-index: 1001;
         }
 
         .logo {
@@ -121,11 +123,23 @@
             justify-content: center;
         }
 
+        /* Mobile Menu Toggle */
+        .mobile-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 30px;
+            cursor: pointer;
+            padding-right: 15px;
+        }
+
         /* Main Content */
         .main-content {
             display: flex;
             flex: 1;
             overflow: hidden;
+            position: relative;
         }
 
         /* Left Sidebar */
@@ -135,6 +149,8 @@
             border-right: 1px solid var(--border);
             overflow-y: auto;
             padding: 20px;
+            transition: all 0.3s ease;
+            z-index: 1000;
         }
 
         .sidebar-section {
@@ -303,6 +319,7 @@
             flex-direction: column;
             background: var(--bg-main);
             position: relative;
+            min-width: 0;
         }
 
         .canvas-toolbar {
@@ -312,6 +329,7 @@
             display: flex;
             gap: 20px;
             align-items: center;
+            overflow-x: auto;
         }
 
         .toolbar-group {
@@ -320,6 +338,7 @@
             align-items: center;
             padding: 0 12px;
             border-right: 1px solid var(--border);
+            flex-shrink: 0;
         }
 
         .toolbar-group:last-child {
@@ -362,6 +381,7 @@
                 0 0 0 1px var(--border),
                 0 20px 40px rgba(0,0,0,0.4);
             cursor: crosshair;
+            max-width: none; /* Keep canvas original size on scroll */
         }
 
         /* Right Sidebar */
@@ -371,6 +391,7 @@
             border-left: 1px solid var(--border);
             overflow-y: auto;
             padding: 20px;
+            transition: all 0.3s ease;
         }
 
         .property-group {
@@ -464,7 +485,7 @@
             bottom: 0;
             background: rgba(0, 0, 0, 0.8);
             backdrop-filter: blur(4px);
-            z-index: 1000;
+            z-index: 2000;
             align-items: center;
             justify-content: center;
         }
@@ -607,6 +628,7 @@
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 20px;
+            transition: all 0.3s ease;
         }
 
         .dimension-item {
@@ -728,7 +750,7 @@
             border-radius: 8px;
             padding: 16px 20px;
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-            z-index: 2000;
+            z-index: 3000;
             display: none;
             align-items: center;
             gap: 12px;
@@ -758,20 +780,124 @@
             font-size: 14px;
             color: var(--text-primary);
         }
+
+        /* --- MOBILE RESPONSIVE CSS --- */
+        @media (max-width: 992px) {
+            .mobile-toggle {
+                display: block;
+            }
+
+            .logo span {
+                font-size: 18px;
+            }
+
+            .header-actions .btn:not(.btn-primary) {
+                padding: 10px;
+            }
+
+            .header-actions .btn span:not(.logo-icon) {
+                font-size: 16px;
+            }
+
+            .header-actions .btn span + span, 
+            .header-actions .btn:not(.btn-icon) span:not(:first-child) {
+                display: none; /* Hide text on small buttons */
+            }
+
+            /* Move Sidebars to Slide-in Menus */
+            .sidebar-left {
+                position: fixed;
+                left: -280px;
+                top: 60px;
+                height: calc(100vh - 60px);
+                box-shadow: 10px 0 15px rgba(0,0,0,0.3);
+            }
+
+            .sidebar-left.mobile-active {
+                left: 0;
+            }
+
+            .sidebar-right {
+                display: none; /* Combine with left sidebar on mobile */
+            }
+
+            /* If the left sidebar is open, show property panel at bottom of it */
+            .sidebar-left.mobile-active .sidebar-section:last-child {
+                border-top: 1px solid var(--border);
+                padding-top: 20px;
+            }
+
+            .dimension-bar {
+                grid-template-columns: repeat(2, 1fr);
+                padding: 10px;
+                gap: 10px;
+            }
+
+            .dimension-value {
+                font-size: 16px;
+            }
+
+            .canvas-toolbar {
+                padding: 8px 10px;
+                gap: 10px;
+            }
+
+            .toolbar-group {
+                padding: 0 6px;
+            }
+
+            /* Overlay for mobile sidebar */
+            .sidebar-overlay {
+                display: none;
+                position: fixed;
+                top: 60px;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0,0,0,0.5);
+                z-index: 999;
+            }
+
+            .sidebar-overlay.active {
+                display: block;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .logo-icon {
+                width: 32px;
+                height: 32px;
+            }
+            .logo {
+                gap: 6px;
+            }
+            .logo span {
+                display: none;
+            }
+            .dimension-bar {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 <body>
+    <!-- Mobile Sidebar Overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleMobileMenu()"></div>
+
     <div class="app-container">
         <!-- Header -->
         <header class="header">
-            <div class="logo">
-                <div class="logo-icon">📐</div>
-                <span>FloorPlan Pro</span>
+            <div style="display: flex; align-items: center;">
+                <button class="mobile-toggle" onclick="toggleMobileMenu()">☰</button>
+                <div class="logo">
+                    <div class="logo-icon">📐</div>
+                    <span>FloorPlan Pro</span>
+                </div>
             </div>
             
             <div class="header-actions">
                 <button class="btn btn-primary" onclick="openProjectModal()">
-                    <span>📄</span> New Project
+                    <span>📄</span> <span>New Project</span>
                 </button>
                 <button class="btn btn-secondary btn-icon" onclick="undo()" title="Undo (Ctrl+Z)">
                     <span>↶</span>
@@ -783,10 +909,10 @@
                     <span>🗑️</span>
                 </button>
                 <button class="btn btn-secondary" onclick="exportDesign()">
-                    <span>📤</span> Export
+                    <span>📤</span> <span>Export</span>
                 </button>
                 <button class="btn btn-secondary" onclick="saveProject()">
-                    <span>💾</span> Save
+                    <span>💾</span> <span>Save</span>
                 </button>
             </div>
         </header>
@@ -794,7 +920,7 @@
         <!-- Main Content -->
         <div class="main-content">
             <!-- Left Sidebar -->
-            <aside class="sidebar-left">
+            <aside class="sidebar-left" id="sidebarLeft">
                 <!-- Drawing Tools -->
                 <div class="sidebar-section">
                     <div class="sidebar-title">
@@ -937,6 +1063,11 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Properties Panel (Merged for mobile) -->
+                <div id="mobileProperties" class="sidebar-section">
+                    <!-- This content is copied from sidebar-right logic for mobile view -->
+                </div>
             </aside>
 
             <!-- Canvas Area -->
@@ -988,7 +1119,7 @@
             </main>
 
             <!-- Right Sidebar -->
-            <aside class="sidebar-right">
+            <aside class="sidebar-right" id="sidebarRight">
                 <!-- Properties -->
                 <div class="sidebar-section">
                     <div class="sidebar-title">
@@ -1254,6 +1385,20 @@
         let currentRoom = null;
         let placingRoom = false;
 
+        // --- NEW: MOBILE MENU LOGIC ---
+        function toggleMobileMenu() {
+            const sidebar = document.getElementById('sidebarLeft');
+            const overlay = document.getElementById('sidebarOverlay');
+            sidebar.classList.toggle('mobile-active');
+            overlay.classList.toggle('active');
+
+            // Copy right sidebar content to left sidebar if on mobile for easy access
+            if (window.innerWidth <= 992 && sidebar.classList.contains('mobile-active')) {
+                const rightSidebarContent = document.getElementById('sidebarRight').innerHTML;
+                document.getElementById('mobileProperties').innerHTML = rightSidebarContent;
+            }
+        }
+
         // Initialize
         function init() {
             canvas.addEventListener('mousedown', handleMouseDown);
@@ -1501,6 +1646,9 @@
             // Highlight the room being placed
             document.getElementById(`room-${selectedRoomType}`).classList.add('placing');
             
+            // Close mobile menu if open
+            if(document.getElementById('sidebarLeft').classList.contains('mobile-active')) toggleMobileMenu();
+
             showToast('📍', 'Click inside the home boundary to place the room');
         }
 
@@ -1517,6 +1665,9 @@
             } else {
                 canvas.style.cursor = 'crosshair';
             }
+
+            // Close mobile menu if open
+            if(document.getElementById('sidebarLeft').classList.contains('mobile-active')) toggleMobileMenu();
         }
 
         // Canvas Event Handlers
