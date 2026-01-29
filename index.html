@@ -995,7 +995,7 @@
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
                         <div class="symbol-item" draggable="true" ondragstart="dragSymbol(event, 'template_hall')"
-                            style="padding: 8px;">
+                            onclick="pickItem('template_hall')" style="padding: 8px;">
                             <span class="symbol-icon"
                                 style="background: rgba(139, 92, 246, 0.1); color: #8b5cf6; font-size: 16px;">🏛️</span>
                             <div class="symbol-info">
@@ -1003,7 +1003,7 @@
                             </div>
                         </div>
                         <div class="symbol-item" draggable="true" ondragstart="dragSymbol(event, 'template_sitting')"
-                            style="padding: 8px;">
+                            onclick="pickItem('template_sitting')" style="padding: 8px;">
                             <span class="symbol-icon"
                                 style="background: rgba(244, 63, 94, 0.1); color: #f43f5e; font-size: 16px;">🛋️</span>
                             <div class="symbol-info">
@@ -1011,7 +1011,7 @@
                             </div>
                         </div>
                         <div class="symbol-item" draggable="true" ondragstart="dragSymbol(event, 'template_kitchen')"
-                            style="padding: 8px;">
+                            onclick="pickItem('template_kitchen')" style="padding: 8px;">
                             <span class="symbol-icon"
                                 style="background: rgba(245, 158, 11, 0.1); color: #f59e0b; font-size: 16px;">🍳</span>
                             <div class="symbol-info">
@@ -1019,7 +1019,7 @@
                             </div>
                         </div>
                         <div class="symbol-item" draggable="true" ondragstart="dragSymbol(event, 'template_toilet')"
-                            style="padding: 8px;">
+                            onclick="pickItem('template_toilet')" style="padding: 8px;">
                             <span class="symbol-icon"
                                 style="background: rgba(6, 182, 212, 0.1); color: #06b6d4; font-size: 16px;">🚽</span>
                             <div class="symbol-info">
@@ -1027,7 +1027,7 @@
                             </div>
                         </div>
                         <div class="symbol-item" draggable="true" ondragstart="dragSymbol(event, 'template_veranda')"
-                            style="padding: 8px;">
+                            onclick="pickItem('template_veranda')" style="padding: 8px;">
                             <span class="symbol-icon"
                                 style="background: rgba(16, 185, 129, 0.1); color: #10b981; font-size: 16px;">🌿</span>
                             <div class="symbol-info">
@@ -1035,7 +1035,7 @@
                             </div>
                         </div>
                         <div class="symbol-item" draggable="true" ondragstart="dragSymbol(event, 'template_bedroom')"
-                            style="padding: 8px;">
+                            onclick="pickItem('template_bedroom')" style="padding: 8px;">
                             <span class="symbol-icon"
                                 style="background: rgba(59, 130, 246, 0.1); color: #3b82f6; font-size: 16px;">🛏️</span>
                             <div class="symbol-info">
@@ -1050,21 +1050,24 @@
                     <div class="sidebar-title">
                         <span>🪜</span> Stairs Library
                     </div>
-                    <div class="symbol-item" draggable="true" ondragstart="dragSymbol(event, 'stair_straight')">
+                    <div class="symbol-item" draggable="true" ondragstart="dragSymbol(event, 'stair_straight')"
+                        onclick="pickItem('stair_straight')">
                         <span class="symbol-icon">📏</span>
                         <div class="symbol-info">
                             <div class="symbol-name">Straight Stairs</div>
                             <div class="symbol-size">10ft Length</div>
                         </div>
                     </div>
-                    <div class="symbol-item" draggable="true" ondragstart="dragSymbol(event, 'stair_lshape')">
+                    <div class="symbol-item" draggable="true" ondragstart="dragSymbol(event, 'stair_lshape')"
+                        onclick="pickItem('stair_lshape')">
                         <span class="symbol-icon">📐</span>
                         <div class="symbol-info">
                             <div class="symbol-name">L-Shape Stairs</div>
                             <div class="symbol-size">6ft x 6ft</div>
                         </div>
                     </div>
-                    <div class="symbol-item" draggable="true" ondragstart="dragSymbol(event, 'stair_spiral')">
+                    <div class="symbol-item" draggable="true" ondragstart="dragSymbol(event, 'stair_spiral')"
+                        onclick="pickItem('stair_spiral')">
                         <span class="symbol-icon">🌀</span>
                         <div class="symbol-info">
                             <div class="symbol-name">Spiral Stairs</div>
@@ -1076,56 +1079,64 @@
                     <div class="sidebar-title">
                         <span>🪑</span> Furniture & Fixtures
                     </div>
-                    <div class="symbol-item" draggable="true" ondragstart="dragSymbol(event, 'bed')">
+                    <div class="symbol-item" draggable="true" ondragstart="dragSymbol(event, 'bed')"
+                        onclick="pickItem('bed')">
                         <span class="symbol-icon">🛏️</span>
                         <div class="symbol-info">
                             <div class="symbol-name">Bed</div>
                             <div class="symbol-size">Queen Size</div>
                         </div>
                     </div>
-                    <div class="symbol-item" draggable="true" ondragstart="dragSymbol(event, 'sofa')">
+                    <div class="symbol-item" draggable="true" ondragstart="dragSymbol(event, 'sofa')"
+                        onclick="pickItem('sofa')">
                         <span class="symbol-icon">🛋️</span>
                         <div class="symbol-info">
                             <div class="symbol-name">Sofa</div>
                             <div class="symbol-size">3-Seater</div>
                         </div>
                     </div>
-                    <div class="symbol-item" draggable="true" ondragstart="dragSymbol(event, 'table')">
+                    <div class="symbol-item" draggable="true" ondragstart="dragSymbol(event, 'table')"
+                        onclick="pickItem('table')">
                         <span class="symbol-icon">🪑</span>
                         <div class="symbol-info">
                             <div class="symbol-name">Dining Table</div>
                             <div class="symbol-size">6-Person</div>
                         </div>
                     </div>
-                    <div class="symbol-item" draggable="true" ondragstart="dragSymbol(event, 'toilet')">
+                    <div class="symbol-item" draggable="true" ondragstart="dragSymbol(event, 'toilet')"
+                        onclick="pickItem('toilet')">
                         <span class="symbol-icon">🚽</span>
                         <div class="symbol-info">
                             <div class="symbol-name">Toilet</div>
                             <div class="symbol-size">Standard</div>
                         </div>
                     </div>
-                    <div class="symbol-item" draggable="true" ondragstart="dragSymbol(event, 'sink')">
+                    <div class="symbol-item" draggable="true" ondragstart="dragSymbol(event, 'sink')"
+                        onclick="pickItem('sink')">
                         <span class="symbol-icon">🚿</span>
                         <div class="symbol-info">
                             <div class="symbol-name">Sink</div>
                             <div class="symbol-size">Bathroom</div>
                         </div>
                     </div>
-                    <div class="symbol-item" draggable="true" ondragstart="dragSymbol(event, 'stove')">
+                    <div class="symbol-item" draggable="true" ondragstart="dragSymbol(event, 'stove')"
+                        onclick="pickItem('stove')">
                         <span class="symbol-icon">🔥</span>
                         <div class="symbol-info">
                             <div class="symbol-name">Stove</div>
                             <div class="symbol-size">4-Burner</div>
                         </div>
                     </div>
-                    <div class="symbol-item" draggable="true" ondragstart="dragSymbol(event, 'fridge')">
+                    <div class="symbol-item" draggable="true" ondragstart="dragSymbol(event, 'fridge')"
+                        onclick="pickItem('fridge')">
                         <span class="symbol-icon">🧊</span>
                         <div class="symbol-info">
                             <div class="symbol-name">Refrigerator</div>
                             <div class="symbol-size">Double Door</div>
                         </div>
                     </div>
-                    <div class="symbol-item" draggable="true" ondragstart="dragSymbol(event, 'plant')">
+                    <div class="symbol-item" draggable="true" ondragstart="dragSymbol(event, 'plant')"
+                        onclick="pickItem('plant')">
                         <span class="symbol-icon">🪴</span>
                         <div class="symbol-info">
                             <div class="symbol-name">Plant</div>
@@ -1541,6 +1552,8 @@
         let isResizing = false;
         let initialPinchDist = 0;
         let initialPinchScale = 0;
+        let mouseX = 0;
+        let mouseY = 0;
 
         // History Stacks
         let undoStack = [];
@@ -1583,7 +1596,59 @@
 
         let selectedRoomType = null;
         let currentRoom = null;
-        let placingRoom = false;
+        let placingRoom = false; // Kept for legacy compatibility if needed
+        let placingItemType = null; // New: holds the type of item being placed via Click/Tap
+
+        function pickItem(type) {
+            placingItemType = type;
+
+            // Auto-close sidebar on mobile
+            const sidebar = document.getElementById('sidebarLeft');
+            if (sidebar.classList.contains('mobile-active')) {
+                toggleMobileMenu();
+            }
+
+            showToast('📍', 'Click on canvas to place item');
+        }
+
+        function handleCanvasClick(e) {
+            if (!placingItemType) return;
+
+            const pos = getMousePos(e);
+            const x = snapToGrid(pos.x);
+            const y = snapToGrid(pos.y);
+
+            saveState();
+
+            // Handle Templates
+            if (placingItemType.startsWith('template_')) {
+                const roomKey = placingItemType.replace('template_', '');
+                const config = roomConfig[roomKey];
+                if (config) {
+                    const newRoom = {
+                        type: roomKey,
+                        name: config.name,
+                        length: config.defaultLength,
+                        breadth: config.defaultBreadth,
+                        width: config.defaultLength * SCALE,
+                        height: config.defaultBreadth * SCALE,
+                        color: config.color,
+                        icon: config.icon,
+                        x: x,
+                        y: y
+                    };
+                    project.rooms.push(newRoom);
+                }
+            } else {
+                // Handle regular symbols
+                addSymbol(placingItemType, x, y);
+            }
+
+            placingItemType = null;
+            redrawAll();
+            updateDimensionDisplay();
+            updateLayerCounts();
+        }
 
         // --- NEW: MOBILE MENU LOGIC ---
         function toggleMobileMenu() {
@@ -1661,10 +1726,12 @@
                 if (currentTool !== 'select' || placingRoom || e.touches.length > 1) e.preventDefault();
             }, { passive: false });
 
+            canvas.addEventListener('click', handleCanvasClick);
+
             canvas.addEventListener('touchend', (e) => {
                 if (e.touches.length < 2) isPanning = false;
                 handleMouseUp(e);
-                if (placingRoom) handleCanvasClick(e);
+                if (placingItemType) handleCanvasClick(e);
             }, { passive: false });
 
             canvas.addEventListener('dragover', (e) => e.preventDefault());
@@ -2348,6 +2415,15 @@
             const pos = getMousePos(e);
             const currentX = pos.x;
             const currentY = pos.y;
+
+            // track for preview
+            mouseX = currentX;
+            mouseY = currentY;
+
+            if (placingItemType) {
+                redrawAll();
+                return;
+            }
 
             if (isResizing) {
                 canvas.style.cursor = 'nwse-resize';
@@ -3229,6 +3305,40 @@
                     drawElement(element);
                 }
             });
+
+            // 4. Draw Placement Preview (Ghost)
+            if (placingItemType) {
+                const px = snapToGrid(mouseX);
+                const py = snapToGrid(mouseY);
+                ctx.save();
+                ctx.globalAlpha = 0.5;
+                if (placingItemType.startsWith('template_')) {
+                    const key = placingItemType.replace('template_', '');
+                    const config = roomConfig[key];
+                    if (config) {
+                        ctx.fillStyle = config.color + '40';
+                        ctx.fillRect(px, py, config.defaultLength * SCALE, config.defaultBreadth * SCALE);
+                        ctx.strokeStyle = config.color;
+                        ctx.lineWidth = 2;
+                        ctx.strokeRect(px, py, config.defaultLength * SCALE, config.defaultBreadth * SCALE);
+                        ctx.font = '24px Arial';
+                        ctx.textAlign = 'center';
+                        ctx.fillText(config.icon, px + (config.defaultLength * SCALE) / 2, py + (config.defaultBreadth * SCALE) / 2);
+                    }
+                } else {
+                    const config = symbols[placingItemType];
+                    if (config) {
+                        if (config.isStair) {
+                            drawStairs(placingItemType, px, py);
+                        } else {
+                            ctx.font = '32px Arial';
+                            ctx.textAlign = 'center';
+                            ctx.fillText(config.emoji, px, py);
+                        }
+                    }
+                }
+                ctx.restore();
+            }
 
             ctx.restore();
         }
