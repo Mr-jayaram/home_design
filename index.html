@@ -732,6 +732,9 @@
             text-align: center;
             max-width: 500px;
             padding: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
         .welcome-icon {
@@ -1446,6 +1449,24 @@
             canvas.addEventListener('mousemove', handleMouseMove);
             canvas.addEventListener('mouseup', handleMouseUp);
             canvas.addEventListener('click', handleCanvasClick);
+
+            // Touch events for mobile
+            canvas.addEventListener('touchstart', (e) => {
+                handleMouseDown(e);
+                if (currentTool !== 'select' || placingRoom) e.preventDefault();
+            }, { passive: false });
+
+            canvas.addEventListener('touchmove', (e) => {
+                handleMouseMove(e);
+                if (currentTool !== 'select' || placingRoom) e.preventDefault();
+            }, { passive: false });
+
+            canvas.addEventListener('touchend', (e) => {
+                handleMouseUp(e);
+                // Also handle click-like behavior for room placement on mobile
+                if (placingRoom) handleCanvasClick(e);
+            }, { passive: false });
+
             canvas.addEventListener('dragover', (e) => e.preventDefault());
             canvas.addEventListener('drop', handleDrop);
 
@@ -1714,8 +1735,21 @@
         // Canvas Event Handlers
         function getMousePos(e) {
             const rect = canvas.getBoundingClientRect();
-            let x = e.clientX - rect.left;
-            let y = e.clientY - rect.top;
+            let clientX, clientY;
+
+            if (e.touches && e.touches.length > 0) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            } else if (e.changedTouches && e.changedTouches.length > 0) {
+                clientX = e.changedTouches[0].clientX;
+                clientY = e.changedTouches[0].clientY;
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
+
+            let x = clientX - rect.left;
+            let y = clientY - rect.top;
 
             const scaleX = canvas.width / (rotation % 180 === 0 ? rect.width : rect.height);
             const scaleY = canvas.height / (rotation % 180 === 0 ? rect.height : rect.width);
