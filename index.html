@@ -372,8 +372,8 @@
 
         .canvas-wrapper {
             flex: 1;
-            padding: 30px;
-            overflow: auto;
+            padding: 10px;
+            overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -388,11 +388,13 @@
             border-radius: 4px;
             box-shadow:
                 0 0 0 1px var(--border),
-                0 20px 40px rgba(0, 0, 0, 0.4);
+                0 10px 30px rgba(0, 0, 0, 0.1);
             cursor: crosshair;
-            max-width: none;
             transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             transform-origin: center center;
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: contain;
         }
 
         #zoomRange {
@@ -1121,13 +1123,18 @@
                         <button class="btn btn-secondary btn-icon" onclick="toggleRotation()" title="Rotate View">
                             <span>🔄</span>
                         </button>
+                        <button class="btn btn-secondary btn-icon" id="gridNumberToggle" onclick="toggleGridNumbers()"
+                            title="Toggle Grid Numbers">
+                            <span>🔢</span>
+                        </button>
                     </div>
                     <div class="toolbar-group">
                         <span class="toolbar-label">Grid:</span>
                         <select class="select-input" id="gridSelect" onchange="updateGrid()">
-                            <option value="20" selected>20px</option>
-                            <option value="10">10px</option>
-                            <option value="5">5px</option>
+                            <option value="1" selected>1 ft</option>
+                            <option value="2">2 ft</option>
+                            <option value="0.5">0.5 ft</option>
+                            <option value="0.25">0.25 ft</option>
                             <option value="0">Off</option>
                         </select>
                     </div>
@@ -1142,7 +1149,7 @@
                 </div>
 
                 <div class="canvas-wrapper">
-                    <canvas id="designCanvas" width="1000" height="700"></canvas>
+                    <canvas id="designCanvas"></canvas>
                 </div>
             </main>
 
@@ -1384,11 +1391,12 @@
         let isDrawing = false;
         let startX, startY;
         let elements = [];
-        let gridSnap = 20;
+        let gridSnap = 15; // Set to default SCALE (1 foot)
         let showGrid = true;
         let snapEnabled = true;
         let SCALE = 15; // pixels per foot
         let rotation = 0;
+        let showGridNumbers = false;
 
         // History Stacks
         let undoStack = [];
@@ -1445,6 +1453,9 @@
 
         // Initialize
         function init() {
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+
             canvas.addEventListener('mousedown', handleMouseDown);
             canvas.addEventListener('mousemove', handleMouseMove);
             canvas.addEventListener('mouseup', handleMouseUp);
@@ -1463,18 +1474,56 @@
 
             canvas.addEventListener('touchend', (e) => {
                 handleMouseUp(e);
-                // Also handle click-like behavior for room placement on mobile
                 if (placingRoom) handleCanvasClick(e);
             }, { passive: false });
 
             canvas.addEventListener('dragover', (e) => e.preventDefault());
             canvas.addEventListener('drop', handleDrop);
 
-            // Add Keyboard listeners for Ctrl+Z and Ctrl+Y
             window.addEventListener('keydown', handleKeyDown);
 
             updateDimensionDisplay();
             updateLayerCounts();
+        }
+
+        function resizeCanvas() {
+            const wrapper = document.querySelector('.canvas-wrapper');
+            const oldWidth = canvas.width;
+            const oldHeight = canvas.height;
+
+            canvas.width = wrapper.clientWidth - 20;
+            canvas.height = wrapper.clientHeight - 20;
+
+            if (project.homeWall) {
+                // Re-center home wall
+                const wallWidth = project.totalLength * SCALE;
+                const wallHeight = project.totalBreadth * SCALE;
+
+                const oldX = project.homeWall.x;
+                const oldY = project.homeWall.y;
+
+                project.homeWall.x = (canvas.width - wallWidth) / 2;
+                project.homeWall.y = (canvas.height - wallHeight) / 2;
+
+                const dx = project.homeWall.x - oldX;
+                const dy = project.homeWall.y - oldY;
+
+                // Shift all assets to maintain relative position
+                project.rooms.forEach(room => {
+                    room.x += dx;
+                    room.y += dy;
+                });
+
+                elements.forEach(el => {
+                    if (el.x1 !== undefined) {
+                        el.x1 += dx; el.y1 += dy;
+                        el.x2 += dx; el.y2 += dy;
+                    } else {
+                        el.x += dx; el.y += dy;
+                    }
+                });
+            }
+            redrawAll();
         }
 
         // --- UNDO / REDO LOGIC ---
@@ -1624,6 +1673,7 @@
             ctx.strokeStyle = '#e5e7eb';
             ctx.lineWidth = 0.5;
 
+            // Draw vertical lines
             for (let x = 0; x <= canvas.width; x += gridSnap) {
                 ctx.beginPath();
                 ctx.moveTo(x, 0);
@@ -1631,13 +1681,55 @@
                 ctx.stroke();
             }
 
+            // Draw horizontal lines
             for (let y = 0; y <= canvas.height; y += gridSnap) {
                 ctx.beginPath();
                 ctx.moveTo(0, y);
                 ctx.lineTo(canvas.width, y);
                 ctx.stroke();
             }
+
+            // Draw numbers if enabled
+            if (showGridNumbers) {
+                // Since fit to screen, sticky logic is simplified (always at top/left edge)
+                const stickyY = 12;
+                const stickyX = 12;
+
+                ctx.font = `bold ${Math.max(10, gridSnap / 3.5)}px DM Sans`;
+                ctx.fillStyle = '#64748b';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+
+                // Horizontal numbering (Top Row)
+                for (let x = 0; x < canvas.width; x += gridSnap) {
+                    const val = Math.floor(x / gridSnap) + 1;
+                    if (x + gridSnap / 2 < canvas.width) {
+                        ctx.fillText(val.toString(), x + gridSnap / 2, stickyY);
+                    }
+                }
+
+                // Vertical numbering (Left Column)
+                for (let y = gridSnap; y < canvas.height; y += gridSnap) {
+                    const val = Math.floor(y / gridSnap) + 1;
+                    if (y + gridSnap / 2 < canvas.height) {
+                        ctx.fillText(val.toString(), stickyX, y + gridSnap / 2);
+                    }
+                }
+            }
             ctx.restore();
+        }
+
+        function toggleGridNumbers() {
+            showGridNumbers = !showGridNumbers;
+            const btn = document.getElementById('gridNumberToggle');
+            if (showGridNumbers) {
+                btn.style.background = 'var(--primary)';
+                btn.style.color = 'white';
+            } else {
+                btn.style.background = '';
+                btn.style.color = '';
+            }
+            redrawAll();
         }
 
         // Room Modal Functions
@@ -2146,11 +2238,17 @@
 
         function redrawAll() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            if (showGrid) drawGrid();
+
             if (project.homeWall) {
                 const { x, y, width, height } = project.homeWall;
                 ctx.fillStyle = '#f9fafb';
                 ctx.fillRect(x, y, width, height);
+            }
+
+            if (showGrid) drawGrid();
+
+            if (project.homeWall) {
+                const { x, y, width, height } = project.homeWall;
                 ctx.strokeStyle = '#1e293b';
                 ctx.lineWidth = 10;
                 ctx.strokeRect(x, y, width, height);
@@ -2212,6 +2310,10 @@
             const oldScale = SCALE;
             SCALE = parseInt(document.getElementById('zoomRange').value);
 
+            // Sync grid snap with new scale
+            const gridValue = parseFloat(document.getElementById('gridSelect').value);
+            gridSnap = gridValue * SCALE;
+
             if (project.homeWall) {
                 // To keep elements and rooms consistent, we would need to scale their positions.
                 // For now, we'll re-calculate home wall and trigger redraw.
@@ -2263,7 +2365,8 @@
         }
 
         function updateGrid() {
-            gridSnap = parseInt(document.getElementById('gridSelect').value);
+            const gridValue = parseFloat(document.getElementById('gridSelect').value);
+            gridSnap = gridValue * SCALE;
             redrawAll();
         }
 
