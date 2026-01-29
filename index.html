@@ -1614,9 +1614,9 @@
         function handleCanvasClick(e) {
             if (!placingItemType) return;
 
-            const pos = getMousePos(e);
-            const x = snapToGrid(pos.x);
-            const y = snapToGrid(pos.y);
+            // Use the tracked mouseX/mouseY which are updated by touchmove/mousemove
+            const x = snapToGrid(mouseX);
+            const y = snapToGrid(mouseY);
 
             saveState();
 
@@ -2110,6 +2110,7 @@
         }
 
         function handleMouseDown(e) {
+            if (placingItemType) return;
 
             const pos = getMousePos(e);
             startX = snapToGrid(pos.x);
