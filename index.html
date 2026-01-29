@@ -1163,6 +1163,45 @@
                     <div class="sidebar-title">
                         <span>⚙️</span> Properties
                     </div>
+
+                    <!-- Selection Edit Section -->
+                    <div id="selectionProperties"
+                        style="display: none; border: 2px solid #ef4444; border-radius: 12px; padding: 12px; margin-bottom: 16px; background: #fff1f2; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                        <div class="property-title"
+                            style="color: #ef4444; border-bottom-color: #fecaca; margin-bottom: 12px;">
+                            <span id="selectedTypeIcon">⚙️</span> <span id="selectedTypeName">Selection</span>
+                        </div>
+
+                        <div style="display: flex; flex-direction: column; gap: 10px;">
+                            <div class="tool-grid" style="grid-template-columns: 1fr 1fr; gap: 8px;">
+                                <button class="btn btn-secondary" onclick="rotateSelected()" title="Rotate 90°">
+                                    <span>🔄</span> Rotate
+                                </button>
+                                <button class="btn btn-secondary" onclick="deleteSelected()"
+                                    style="background: #ef4444; color: white; border: none;">
+                                    <span>🗑</span> Delete
+                                </button>
+                            </div>
+
+                            <!-- Door Specific Controls -->
+                            <div class="door-ctrl"
+                                style="display: none; border-top: 1px solid #fecaca; padding-top: 10px;">
+                                <div
+                                    style="font-size: 11px; font-weight: bold; color: #991b1b; margin-bottom: 6px; text-transform: uppercase;">
+                                    Door Orientation</div>
+                                <div class="tool-grid" style="grid-template-columns: 1fr 1fr; gap: 8px;">
+                                    <button class="btn btn-secondary" onclick="flipDoorSwing()"
+                                        style="background: white; border: 1px solid #fecaca;">
+                                        <span>⇅</span> In / Out
+                                    </button>
+                                    <button class="btn btn-secondary" onclick="flipDoorHinge()"
+                                        style="background: white; border: 1px solid #fecaca;">
+                                        <span>⇄</span> Left / Right
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <div class="property-group">
                         <div class="property-title">Wall Settings</div>
                         <div class="property-row">
@@ -1419,6 +1458,8 @@
         let dragOffsetX = 0;
         let dragOffsetY = 0;
         let isMovingElement = false;
+        let initialPinchDist = 0;
+        let initialPinchScale = 0;
 
         // History Stacks
         let undoStack = [];
@@ -1489,6 +1530,11 @@
                     isPanning = true;
                     lastTouchX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
                     lastTouchY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+                    initialPinchDist = Math.hypot(
+                        e.touches[0].clientX - e.touches[1].clientX,
+                        e.touches[0].clientY - e.touches[1].clientY
+                    );
+                    initialPinchScale = SCALE;
                 } else if (e.touches.length === 1) {
                     isPanning = false;
                     handleMouseDown(e);
@@ -1506,6 +1552,24 @@
 
                     lastTouchX = currentTouchX;
                     lastTouchY = currentTouchY;
+
+                    // Pinch to zoom
+                    const currentPinchDist = Math.hypot(
+                        e.touches[0].clientX - e.touches[1].clientX,
+                        e.touches[0].clientY - e.touches[1].clientY
+                    );
+
+                    if (initialPinchDist > 0) {
+                        const ratio = currentPinchDist / initialPinchDist;
+                        let newScale = Math.round(initialPinchScale * ratio);
+                        newScale = Math.max(5, Math.min(30, newScale));
+
+                        if (newScale !== SCALE) {
+                            document.getElementById('zoomRange').value = newScale;
+                            updateScale();
+                        }
+                    }
+
                     redrawAll();
                 } else if (e.touches.length === 1 && !isPanning) {
                     handleMouseMove(e);
@@ -1991,7 +2055,6 @@
                             dragOffsetX = pos.x - selectedElement.x;
                             dragOffsetY = pos.y - selectedElement.y;
                         } else {
-                            // For lines (wall, door, window), we use first point as reference
                             dragOffsetX = pos.x - selectedElement.x1;
                             dragOffsetY = pos.y - selectedElement.y1;
                         }
@@ -2002,10 +2065,10 @@
                     selectedElement = null;
                     selectedRoom = null;
                 }
+                updateSelectionUI();
                 redrawAll();
                 return;
             }
-
             isDrawing = true;
 
             if (currentTool === 'text') {
@@ -2039,6 +2102,105 @@
                 }
             }
             return null;
+        }
+
+        function isPointNearLine(px, py, x1, y1, x2, y2, tolerance) {
+            const l2 = Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2);
+            if (l2 === 0) return Math.sqrt(Math.pow(px - x1, 2) + Math.pow(py - y1, 2)) < tolerance;
+            let t = ((px - x1) * (x2 - x1) + (py - y1) * (y2 - y1)) / l2;
+            t = Math.max(0, Math.min(1, t));
+            const dist = Math.sqrt(Math.pow(px - (x1 + t * (x2 - x1)), 2) + Math.pow(py - (y1 + t * (y2 - y1)), 2));
+            return dist < tolerance;
+        }
+
+        // Selection Actions
+        function updateSelectionUI() {
+            const panel = document.getElementById('selectionProperties');
+            const typeName = document.getElementById('selectedTypeName');
+            const typeIcon = document.getElementById('selectedTypeIcon');
+            const doorCtrls = document.querySelectorAll('.door-ctrl');
+
+            if (selectedElement || selectedRoom) {
+                panel.style.display = 'block';
+
+                if (selectedRoom) {
+                    typeName.textContent = 'Room: ' + selectedRoom.name;
+                    typeIcon.textContent = selectedRoom.icon || '🏠';
+                } else {
+                    typeName.textContent = selectedElement.type.charAt(0).toUpperCase() + selectedElement.type.slice(1);
+                    const icons = { wall: '📏', door: '🚪', window: '🪟', symbol: '🪑', text: '📝' };
+                    typeIcon.textContent = icons[selectedElement.type] || '⚙️';
+                }
+
+                doorCtrls.forEach(c => c.style.display = (selectedElement?.type === 'door') ? 'block' : 'none');
+            } else {
+                panel.style.display = 'none';
+            }
+        }
+
+        function rotateSelected() {
+            if (!selectedElement && !selectedRoom) return;
+            saveState();
+
+            if (selectedRoom) {
+                const temp = selectedRoom.length;
+                selectedRoom.length = selectedRoom.breadth;
+                selectedRoom.breadth = temp;
+                selectedRoom.width = selectedRoom.length * SCALE;
+                selectedRoom.height = selectedRoom.breadth * SCALE;
+            } else if (selectedElement) {
+                if (selectedElement.type === 'text' || selectedElement.type === 'symbol') {
+                    // Logic for text/symbol rotation can be added here
+                } else {
+                    // Rotate line around its center
+                    const midX = (selectedElement.x1 + selectedElement.x2) / 2;
+                    const midY = (selectedElement.y1 + selectedElement.y2) / 2;
+                    const x1 = selectedElement.x1 - midX;
+                    const y1 = selectedElement.y1 - midY;
+                    const x2 = selectedElement.x2 - midX;
+                    const y2 = selectedElement.y2 - midY;
+
+                    selectedElement.x1 = snapToGrid(midX - y1);
+                    selectedElement.y1 = snapToGrid(midY + x1);
+                    selectedElement.x2 = snapToGrid(midX - y2);
+                    selectedElement.y2 = snapToGrid(midY + x2);
+                }
+            }
+            redrawAll();
+            updateDimensionDisplay();
+            showToast('🔄', 'Rotated/Converted alignment');
+        }
+
+        function flipDoorHinge() {
+            if (selectedElement?.type !== 'door') return;
+            saveState();
+            selectedElement.flippedHinge = !selectedElement.flippedHinge;
+            redrawAll();
+            showToast('⇄', 'Hinge flipped');
+        }
+
+        function flipDoorSwing() {
+            if (selectedElement?.type !== 'door') return;
+            saveState();
+            selectedElement.flippedSwing = !selectedElement.flippedSwing;
+            redrawAll();
+            showToast('⇅', 'Swing flipped');
+        }
+
+        function deleteSelected() {
+            if (selectedElement) {
+                saveState();
+                elements = elements.filter(el => el !== selectedElement);
+                selectedElement = null;
+            } else if (selectedRoom) {
+                saveState();
+                project.rooms = project.rooms.filter(r => r !== selectedRoom);
+                selectedRoom = null;
+            }
+            updateSelectionUI();
+            updateLayerCounts();
+            redrawAll();
+            showToast('🗑️', 'Deleted');
         }
 
         function isPointNearLine(px, py, x1, y1, x2, y2, tolerance) {
@@ -2155,6 +2317,10 @@
         function handleDrop(e) {
             e.preventDefault();
             const symbolType = e.dataTransfer.getData('symbol');
+            if (!symbolType || !symbols[symbolType]) {
+                showToast('❌', 'Invalid furniture/symbol');
+                return;
+            }
             const pos = getMousePos(e);
             const x = snapToGrid(pos.x);
             const y = snapToGrid(pos.y);
@@ -2255,13 +2421,22 @@
                 ctx.setLineDash([5, 5]);
                 ctx.strokeStyle = '#ef4444';
                 ctx.lineWidth = 2;
+
                 if (element.type === 'text' || element.type === 'symbol') {
-                    ctx.strokeRect(element.x - 20, element.y - 20, 40, 40);
-                } else {
-                    ctx.beginPath();
-                    ctx.moveTo(element.x1, element.y1);
-                    ctx.lineTo(element.x2, element.y2);
-                    ctx.stroke();
+                    const size = 30;
+                    ctx.strokeRect(element.x - size / 2 - 5, element.y - size / 2 - 5, size + 10, size + 10);
+                } else if (element.x1 !== undefined) {
+                    // Calculate distance and angle for line-based elements
+                    const dist = Math.sqrt(Math.pow(element.x2 - element.x1, 2) + Math.pow(element.y2 - element.y1, 2));
+                    const ang = Math.atan2(element.y2 - element.y1, element.x2 - element.x1);
+                    const thick = element.thickness || parseInt(document.getElementById('wallThickness').value) || 6;
+
+                    ctx.save();
+                    ctx.translate(element.x1, element.y1);
+                    ctx.rotate(ang);
+                    // Draw box around the total footprint
+                    ctx.strokeRect(-4, -thick / 2 - 4, dist + 8, thick + 8);
+                    ctx.restore();
                 }
                 ctx.restore();
             }
@@ -2278,7 +2453,7 @@
                     drawWallDimension(element.x1, element.y1, element.x2, element.y2, element.color);
                     break;
                 case 'door':
-                    drawDoor(element.x1, element.y1, element.x2, element.y2, false);
+                    drawDoor(element.x1, element.y1, element.x2, element.y2, false, element);
                     break;
                 case 'window':
                     drawWindow(element.x1, element.y1, element.x2, element.y2, false);
@@ -2343,18 +2518,33 @@
             ctx.restore();
         }
 
-        function drawDoor(x1, y1, x2, y2, preview) {
+        function drawDoor(x1, y1, x2, y2, preview, element = null) {
             const distance = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
             const angle = Math.atan2(y2 - y1, x2 - x1);
             const thickness = parseInt(document.getElementById('wallThickness').value);
+
+            // Get flip states
+            const flippedHinge = element?.flippedHinge || false;
+            const flippedSwing = element?.flippedSwing || false;
 
             ctx.save();
             ctx.translate(x1, y1);
             ctx.rotate(angle);
 
-            // 1. Clear wall area (The Opening)
+            // 1. Clear wall area
             ctx.fillStyle = 'white';
             ctx.fillRect(0, -thickness / 2, distance, thickness);
+
+            // Handle Hinge Flip (Mirror along the wall length)
+            if (flippedHinge) {
+                ctx.translate(distance, 0);
+                ctx.scale(-1, 1);
+            }
+
+            // Handle Swing Flip (Mirror across the wall thickness)
+            if (flippedSwing) {
+                ctx.scale(1, -1);
+            }
 
             // 2. Door Frame / Hinge Point
             ctx.strokeStyle = '#1e293b';
@@ -2364,14 +2554,14 @@
             ctx.lineTo(0, thickness / 2);
             ctx.stroke();
 
-            // 3. The Door Panel (Open at 90 degrees)
+            // 3. Door Panel (Open at 90 degrees)
             ctx.beginPath();
             ctx.lineWidth = 2;
             ctx.moveTo(0, 0);
-            ctx.lineTo(0, -distance); // Perpendicular to wall
+            ctx.lineTo(0, -distance);
             ctx.stroke();
 
-            // 4. Swing Arc (Solid line as per image)
+            // 4. Swing Arc
             ctx.beginPath();
             ctx.lineWidth = 1;
             ctx.arc(0, 0, distance, 0, -Math.PI / 2, true);
@@ -2398,7 +2588,6 @@
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
 
-                // Draw background
                 const text = `D: ${lengthFt}'`;
                 const tw = ctx.measureText(text).width;
                 ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
@@ -2525,6 +2714,10 @@
 
         function drawSymbol(element) {
             const symbol = symbols[element.symbolType];
+            if (!symbol) {
+                console.warn(`Furniture/Symbol type "${element.symbolType}" not found.`);
+                return;
+            }
             ctx.font = `${symbol.height}px Arial`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
@@ -2633,6 +2826,13 @@
         function updateScale() {
             const oldScale = SCALE;
             SCALE = parseInt(document.getElementById('zoomRange').value);
+
+            // Scale offsets proportionally to maintain view center
+            if (oldScale > 0) {
+                const ratio = SCALE / oldScale;
+                offsetX *= ratio;
+                offsetY *= ratio;
+            }
 
             // Sync grid snap with new scale
             const gridValue = parseFloat(document.getElementById('gridSelect').value);
