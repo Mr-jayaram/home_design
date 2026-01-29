@@ -1,1 +1,2039 @@
-ind
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional Floor Plan Designer</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1e40af;
+            --secondary: #7c3aed;
+            --accent: #f59e0b;
+            --bg-main: #0f172a;
+            --bg-panel: #1e293b;
+            --bg-card: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --border: #475569;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg-main);
+            color: var(--text-primary);
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--bg-panel) 0%, var(--bg-card) 100%);
+            border-bottom: 1px solid var(--border);
+            padding: 0 20px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-family: 'Playfair Display', serif;
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'DM Sans', sans-serif;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(37, 99, 235, 0.4);
+        }
+
+        .btn-secondary {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border);
+        }
+
+        .btn-icon {
+            padding: 10px;
+            min-width: 40px;
+            justify-content: center;
+        }
+
+        /* Main Content */
+        .main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Left Sidebar */
+        .sidebar-left {
+            width: 280px;
+            background: var(--bg-panel);
+            border-right: 1px solid var(--border);
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .sidebar-section {
+            margin-bottom: 24px;
+        }
+
+        .sidebar-title {
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tool-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .tool-btn {
+            background: var(--bg-card);
+            border: 2px solid transparent;
+            border-radius: 8px;
+            padding: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .tool-btn:hover {
+            background: var(--border);
+            transform: translateY(-2px);
+        }
+
+        .tool-btn.active {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-color: var(--primary);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        .tool-icon {
+            font-size: 28px;
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .tool-label {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .tool-btn.active .tool-label {
+            color: white;
+        }
+
+        /* Room Items */
+        .room-item {
+            background: var(--bg-card);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            padding: 14px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .room-item:hover {
+            background: var(--border);
+            transform: translateX(4px);
+            border-color: var(--primary);
+        }
+
+        .room-item.placing {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-color: var(--primary);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+
+        .room-icon {
+            font-size: 28px;
+        }
+
+        .room-info {
+            flex: 1;
+        }
+
+        .room-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+        }
+
+        .room-item.placing .room-name {
+            color: white;
+        }
+
+        .room-size {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        .room-item.placing .room-size {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        /* Symbol Library */
+        .symbol-item {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 10px;
+            margin-bottom: 8px;
+            cursor: move;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .symbol-item:hover {
+            background: var(--border);
+            transform: translateX(4px);
+        }
+
+        .symbol-icon {
+            font-size: 24px;
+            width: 40px;
+            text-align: center;
+        }
+
+        .symbol-info {
+            flex: 1;
+        }
+
+        .symbol-name {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .symbol-size {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        /* Canvas Area */
+        .canvas-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-main);
+            position: relative;
+        }
+
+        .canvas-toolbar {
+            background: var(--bg-panel);
+            border-bottom: 1px solid var(--border);
+            padding: 12px 20px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .toolbar-group {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            padding: 0 12px;
+            border-right: 1px solid var(--border);
+        }
+
+        .toolbar-group:last-child {
+            border-right: none;
+        }
+
+        .toolbar-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-right: 6px;
+        }
+
+        .select-input {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        .canvas-wrapper {
+            flex: 1;
+            padding: 30px;
+            overflow: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(37, 99, 235, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(124, 58, 237, 0.05) 0%, transparent 50%),
+                var(--bg-main);
+        }
+
+        #designCanvas {
+            background: white;
+            border-radius: 4px;
+            box-shadow: 
+                0 0 0 1px var(--border),
+                0 20px 40px rgba(0,0,0,0.4);
+            cursor: crosshair;
+        }
+
+        /* Right Sidebar */
+        .sidebar-right {
+            width: 300px;
+            background: var(--bg-panel);
+            border-left: 1px solid var(--border);
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .property-group {
+            background: var(--bg-card);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .property-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--text-primary);
+        }
+
+        .property-row {
+            margin-bottom: 12px;
+        }
+
+        .property-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .property-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+
+        .property-input {
+            width: 100%;
+            background: var(--bg-main);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+
+        /* Layers Panel */
+        .layer-item {
+            background: var(--bg-main);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 10px;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .layer-item:hover {
+            background: var(--border);
+        }
+
+        .layer-visibility {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .layer-name {
+            flex: 1;
+            font-size: 13px;
+        }
+
+        .layer-count {
+            font-size: 11px;
+            color: var(--text-secondary);
+            background: var(--bg-card);
+            padding: 2px 8px;
+            border-radius: 12px;
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--bg-panel);
+            border-radius: 16px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+            border: 1px solid var(--border);
+            animation: modalSlideIn 0.3s ease;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+        }
+
+        .modal-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .modal-close {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: all 0.2s ease;
+        }
+
+        .modal-close:hover {
+            background: var(--danger);
+            color: white;
+        }
+
+        .modal-body {
+            margin-bottom: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .form-input {
+            width: 100%;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: 'DM Sans', sans-serif;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .form-select {
+            width: 100%;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .input-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .btn-cancel {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-cancel:hover {
+            background: var(--border);
+        }
+
+        /* Dimension Display Bar */
+        .dimension-bar {
+            background: var(--bg-panel);
+            border-top: 1px solid var(--border);
+            padding: 16px 20px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+        }
+
+        .dimension-item {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px 16px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .dimension-label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+
+        .dimension-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .dimension-unit {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-left: 4px;
+        }
+
+        .dimension-item.balance {
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(124, 58, 237, 0.1));
+            border-color: var(--primary);
+        }
+
+        .dimension-item.balance .dimension-value {
+            color: var(--primary);
+        }
+
+        /* Info Badge */
+        .info-badge {
+            display: inline-block;
+            background: var(--bg-card);
+            color: var(--text-secondary);
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            margin-left: 8px;
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-panel);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-secondary);
+        }
+
+        /* Welcome Screen */
+        .welcome-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(15, 23, 42, 0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        .welcome-content {
+            text-align: center;
+            max-width: 500px;
+            padding: 40px;
+        }
+
+        .welcome-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+        }
+
+        .welcome-title {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .welcome-subtitle {
+            font-size: 16px;
+            color: var(--text-secondary);
+            margin-bottom: 32px;
+        }
+
+        /* Notification Toast */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px 20px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+            z-index: 2000;
+            display: none;
+            align-items: center;
+            gap: 12px;
+            animation: slideInRight 0.3s ease;
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(100px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .toast.active {
+            display: flex;
+        }
+
+        .toast-icon {
+            font-size: 24px;
+        }
+
+        .toast-message {
+            font-size: 14px;
+            color: var(--text-primary);
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <div class="logo-icon">📐</div>
+                <span>FloorPlan Pro</span>
+            </div>
+            
+            <div class="header-actions">
+                <button class="btn btn-primary" onclick="openProjectModal()">
+                    <span>📄</span> New Project
+                </button>
+                <button class="btn btn-secondary btn-icon" onclick="undo()" title="Undo (Ctrl+Z)">
+                    <span>↶</span>
+                </button>
+                <button class="btn btn-secondary btn-icon" onclick="redo()" title="Redo (Ctrl+Y)">
+                    <span>↷</span>
+                </button>
+                <button class="btn btn-secondary btn-icon" onclick="clearCanvas()" title="Clear">
+                    <span>🗑️</span>
+                </button>
+                <button class="btn btn-secondary" onclick="exportDesign()">
+                    <span>📤</span> Export
+                </button>
+                <button class="btn btn-secondary" onclick="saveProject()">
+                    <span>💾</span> Save
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Left Sidebar -->
+            <aside class="sidebar-left">
+                <!-- Drawing Tools -->
+                <div class="sidebar-section">
+                    <div class="sidebar-title">
+                        <span>🛠️</span> Drawing Tools
+                    </div>
+                    <div class="tool-grid">
+                        <div class="tool-btn active" onclick="selectTool('select')" id="tool-select">
+                            <span class="tool-icon">👆</span>
+                            <div class="tool-label">Select</div>
+                        </div>
+                        <div class="tool-btn" onclick="selectTool('wall')" id="tool-wall">
+                            <span class="tool-icon">📏</span>
+                            <div class="tool-label">Wall</div>
+                        </div>
+                        <div class="tool-btn" onclick="selectTool('door')" id="tool-door">
+                            <span class="tool-icon">🚪</span>
+                            <div class="tool-label">Door</div>
+                        </div>
+                        <div class="tool-btn" onclick="selectTool('window')" id="tool-window">
+                            <span class="tool-icon">🪟</span>
+                            <div class="tool-label">Window</div>
+                        </div>
+                        <div class="tool-btn" onclick="selectTool('dimension')" id="tool-dimension">
+                            <span class="tool-icon">📐</span>
+                            <div class="tool-label">Dimension</div>
+                        </div>
+                        <div class="tool-btn" onclick="selectTool('text')" id="tool-text">
+                            <span class="tool-icon">📝</span>
+                            <div class="tool-label">Text</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Rooms Section -->
+                <div class="sidebar-section">
+                    <div class="sidebar-title">
+                        <span>🏠</span> Rooms
+                    </div>
+                    
+                    <div class="room-item" onclick="selectRoom('bedroom')" id="room-bedroom">
+                        <span class="room-icon">🛏️</span>
+                        <div class="room-info">
+                            <div class="room-name">Bedroom</div>
+                            <div class="room-size" id="bedroom-size">Click to set size</div>
+                        </div>
+                    </div>
+
+                    <div class="room-item" onclick="selectRoom('kitchen')" id="room-kitchen">
+                        <span class="room-icon">🍳</span>
+                        <div class="room-info">
+                            <div class="room-name">Kitchen</div>
+                            <div class="room-size" id="kitchen-size">Click to set size</div>
+                        </div>
+                    </div>
+
+                    <div class="room-item" onclick="selectRoom('toilet')" id="room-toilet">
+                        <span class="room-icon">🚽</span>
+                        <div class="room-info">
+                            <div class="room-name">Toilet</div>
+                            <div class="room-size" id="toilet-size">Click to set size</div>
+                        </div>
+                    </div>
+
+                    <div class="room-item" onclick="selectRoom('hall')" id="room-hall">
+                        <span class="room-icon">🏛️</span>
+                        <div class="room-info">
+                            <div class="room-name">Hall</div>
+                            <div class="room-size" id="hall-size">Click to set size</div>
+                        </div>
+                    </div>
+
+                    <div class="room-item" onclick="selectRoom('veranda')" id="room-veranda">
+                        <span class="room-icon">🌿</span>
+                        <div class="room-info">
+                            <div class="room-name">Veranda</div>
+                            <div class="room-size" id="veranda-size">Click to set size</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Furniture Library -->
+                <div class="sidebar-section">
+                    <div class="sidebar-title">
+                        <span>🪑</span> Furniture & Fixtures
+                    </div>
+                    <div class="symbol-item" draggable="true" ondragstart="dragSymbol(event, 'bed')">
+                        <span class="symbol-icon">🛏️</span>
+                        <div class="symbol-info">
+                            <div class="symbol-name">Bed</div>
+                            <div class="symbol-size">Queen Size</div>
+                        </div>
+                    </div>
+                    <div class="symbol-item" draggable="true" ondragstart="dragSymbol(event, 'sofa')">
+                        <span class="symbol-icon">🛋️</span>
+                        <div class="symbol-info">
+                            <div class="symbol-name">Sofa</div>
+                            <div class="symbol-size">3-Seater</div>
+                        </div>
+                    </div>
+                    <div class="symbol-item" draggable="true" ondragstart="dragSymbol(event, 'table')">
+                        <span class="symbol-icon">🪑</span>
+                        <div class="symbol-info">
+                            <div class="symbol-name">Dining Table</div>
+                            <div class="symbol-size">6-Person</div>
+                        </div>
+                    </div>
+                    <div class="symbol-item" draggable="true" ondragstart="dragSymbol(event, 'toilet')">
+                        <span class="symbol-icon">🚽</span>
+                        <div class="symbol-info">
+                            <div class="symbol-name">Toilet</div>
+                            <div class="symbol-size">Standard</div>
+                        </div>
+                    </div>
+                    <div class="symbol-item" draggable="true" ondragstart="dragSymbol(event, 'sink')">
+                        <span class="symbol-icon">🚿</span>
+                        <div class="symbol-info">
+                            <div class="symbol-name">Sink</div>
+                            <div class="symbol-size">Bathroom</div>
+                        </div>
+                    </div>
+                    <div class="symbol-item" draggable="true" ondragstart="dragSymbol(event, 'stove')">
+                        <span class="symbol-icon">🔥</span>
+                        <div class="symbol-info">
+                            <div class="symbol-name">Stove</div>
+                            <div class="symbol-size">4-Burner</div>
+                        </div>
+                    </div>
+                    <div class="symbol-item" draggable="true" ondragstart="dragSymbol(event, 'fridge')">
+                        <span class="symbol-icon">🧊</span>
+                        <div class="symbol-info">
+                            <div class="symbol-name">Refrigerator</div>
+                            <div class="symbol-size">Double Door</div>
+                        </div>
+                    </div>
+                    <div class="symbol-item" draggable="true" ondragstart="dragSymbol(event, 'plant')">
+                        <span class="symbol-icon">🪴</span>
+                        <div class="symbol-info">
+                            <div class="symbol-name">Plant</div>
+                            <div class="symbol-size">Decorative</div>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Canvas Area -->
+            <main class="canvas-area">
+                <!-- Welcome Screen -->
+                <div class="welcome-screen" id="welcomeScreen">
+                    <div class="welcome-content">
+                        <div class="welcome-icon">🏗️</div>
+                        <h1 class="welcome-title">Start Your Design</h1>
+                        <p class="welcome-subtitle">Create a new project to begin designing your floor plan</p>
+                        <button class="btn btn-primary" style="font-size: 16px; padding: 14px 28px;" onclick="openProjectModal()">
+                            <span>📄</span> Create New Project
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Canvas Toolbar -->
+                <div class="canvas-toolbar">
+                    <div class="toolbar-group">
+                        <span class="toolbar-label">Scale:</span>
+                        <select class="select-input" id="scaleSelect" onchange="updateScale()">
+                            <option value="10">1:10</option>
+                            <option value="15" selected>1:15</option>
+                            <option value="20">1:20</option>
+                        </select>
+                    </div>
+                    <div class="toolbar-group">
+                        <span class="toolbar-label">Grid:</span>
+                        <select class="select-input" id="gridSelect" onchange="updateGrid()">
+                            <option value="20" selected>20px</option>
+                            <option value="10">10px</option>
+                            <option value="5">5px</option>
+                            <option value="0">Off</option>
+                        </select>
+                    </div>
+                    <div class="toolbar-group">
+                        <button class="btn btn-secondary btn-icon" onclick="toggleGrid()" title="Toggle Grid">
+                            <span>⊞</span>
+                        </button>
+                        <button class="btn btn-secondary btn-icon" onclick="toggleSnap()" title="Toggle Snap">
+                            <span>🧲</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="canvas-wrapper">
+                    <canvas id="designCanvas" width="1000" height="700"></canvas>
+                </div>
+            </main>
+
+            <!-- Right Sidebar -->
+            <aside class="sidebar-right">
+                <!-- Properties -->
+                <div class="sidebar-section">
+                    <div class="sidebar-title">
+                        <span>⚙️</span> Properties
+                    </div>
+                    <div class="property-group">
+                        <div class="property-title">Wall Settings</div>
+                        <div class="property-row">
+                            <label class="property-label">Thickness</label>
+                            <input type="number" class="property-input" id="wallThickness" value="6" min="2" max="24" onchange="redrawAll()">
+                        </div>
+                        <div class="property-row">
+                            <label class="property-label">Color</label>
+                            <input type="color" class="property-input" id="wallColor" value="#1e293b" onchange="redrawAll()">
+                        </div>
+                    </div>
+
+                    <div class="property-group">
+                        <div class="property-title">Door Settings</div>
+                        <div class="property-row">
+                            <label class="property-label">Type</label>
+                            <select class="property-input" id="doorType">
+                                <option value="single">Single</option>
+                                <option value="double">Double</option>
+                                <option value="sliding">Sliding</option>
+                            </select>
+                        </div>
+                        <div class="property-row">
+                            <label class="property-label">Width (ft)</label>
+                            <input type="number" class="property-input" id="doorWidth" value="3" min="2" max="8">
+                        </div>
+                    </div>
+
+                    <div class="property-group">
+                        <div class="property-title">Window Settings</div>
+                        <div class="property-row">
+                            <label class="property-label">Type</label>
+                            <select class="property-input" id="windowType">
+                                <option value="standard">Standard</option>
+                                <option value="bay">Bay</option>
+                                <option value="sliding">Sliding</option>
+                            </select>
+                        </div>
+                        <div class="property-row">
+                            <label class="property-label">Width (ft)</label>
+                            <input type="number" class="property-input" id="windowWidth" value="4" min="2" max="10">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Layers -->
+                <div class="sidebar-section">
+                    <div class="sidebar-title">
+                        <span>📚</span> Layers
+                    </div>
+                    <div class="layer-item">
+                        <span class="layer-visibility">👁️</span>
+                        <span class="layer-name">Home Boundary</span>
+                        <span class="layer-count" id="homeCount">0</span>
+                    </div>
+                    <div class="layer-item">
+                        <span class="layer-visibility">👁️</span>
+                        <span class="layer-name">Rooms</span>
+                        <span class="layer-count" id="roomsCount">0</span>
+                    </div>
+                    <div class="layer-item">
+                        <span class="layer-visibility">👁️</span>
+                        <span class="layer-name">Walls</span>
+                        <span class="layer-count" id="wallCount">0</span>
+                    </div>
+                    <div class="layer-item">
+                        <span class="layer-visibility">👁️</span>
+                        <span class="layer-name">Doors & Windows</span>
+                        <span class="layer-count" id="doorWindowCount">0</span>
+                    </div>
+                    <div class="layer-item">
+                        <span class="layer-visibility">👁️</span>
+                        <span class="layer-name">Furniture</span>
+                        <span class="layer-count" id="furnitureCount">0</span>
+                    </div>
+                </div>
+            </aside>
+        </div>
+
+        <!-- Dimension Display Bar -->
+        <div class="dimension-bar">
+            <div class="dimension-item">
+                <div class="dimension-label">Total Length</div>
+                <div class="dimension-value">
+                    <span id="totalLength">0</span>
+                    <span class="dimension-unit">ft</span>
+                </div>
+            </div>
+            <div class="dimension-item">
+                <div class="dimension-label">Total Breadth</div>
+                <div class="dimension-value">
+                    <span id="totalBreadth">0</span>
+                    <span class="dimension-unit">ft</span>
+                </div>
+            </div>
+            <div class="dimension-item balance">
+                <div class="dimension-label">Balance Length</div>
+                <div class="dimension-value">
+                    <span id="balanceLength">0</span>
+                    <span class="dimension-unit">ft</span>
+                </div>
+            </div>
+            <div class="dimension-item balance">
+                <div class="dimension-label">Balance Breadth</div>
+                <div class="dimension-value">
+                    <span id="balanceBreadth">0</span>
+                    <span class="dimension-unit">ft</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Project Setup Modal -->
+    <div class="modal-overlay" id="projectModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">
+                    <span>🏗️</span> New Project Setup
+                </h2>
+                <button class="modal-close" onclick="closeProjectModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Project Name</label>
+                    <input type="text" class="form-input" id="projectNameInput" placeholder="My Dream Home" value="My Dream Home">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Home Type</label>
+                    <select class="form-select" id="homeType">
+                        <option value="residential">Residential</option>
+                        <option value="apartment">Apartment</option>
+                        <option value="villa">Villa</option>
+                        <option value="duplex">Duplex</option>
+                        <option value="bungalow">Bungalow</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Home Dimensions</label>
+                    <div class="input-group">
+                        <div>
+                            <label class="form-label" style="margin-bottom: 6px;">Length (feet)</label>
+                            <input type="number" class="form-input" id="homeLength" placeholder="40" value="40" min="10" max="200">
+                        </div>
+                        <div>
+                            <label class="form-label" style="margin-bottom: 6px;">Breadth (feet)</label>
+                            <input type="number" class="form-input" id="homeBreadth" placeholder="30" value="30" min="10" max="200">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-cancel" onclick="closeProjectModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="createProject()">
+                    <span>✓</span> Create Project
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Room Setup Modal -->
+    <div class="modal-overlay" id="roomModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">
+                    <span id="roomModalIcon">🛏️</span> 
+                    <span id="roomModalTitle">Bedroom</span> Setup
+                </h2>
+                <button class="modal-close" onclick="closeRoomModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Room Name <span class="info-badge" id="roomNameBadge">Bedroom</span></label>
+                    <input type="text" class="form-input" id="roomName" placeholder="Master Bedroom">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Room Dimensions</label>
+                    <div class="input-group">
+                        <div>
+                            <label class="form-label" style="margin-bottom: 6px;">Length (feet)</label>
+                            <input type="number" class="form-input" id="roomLength" placeholder="12" value="12" min="4" max="50">
+                        </div>
+                        <div>
+                            <label class="form-label" style="margin-bottom: 6px;">Breadth (feet)</label>
+                            <input type="number" class="form-input" id="roomBreadth" placeholder="10" value="10" min="4" max="50">
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Wall Color</label>
+                    <input type="color" class="form-input" id="roomColor" value="#2563eb" style="height: 50px; cursor: pointer;">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-cancel" onclick="closeRoomModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveRoom()">
+                    <span>✓</span> Save & Place
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast">
+        <span class="toast-icon">✓</span>
+        <span class="toast-message" id="toastMessage"></span>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('designCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Application state
+        let currentTool = 'select';
+        let isDrawing = false;
+        let startX, startY;
+        let elements = [];
+        let gridSnap = 20;
+        let showGrid = true;
+        let snapEnabled = true;
+        let SCALE = 15; // pixels per foot
+
+        // History Stacks
+        let undoStack = [];
+        let redoStack = [];
+
+        // Project state
+        let project = {
+            name: '',
+            type: '',
+            totalLength: 0,
+            totalBreadth: 0,
+            homeWall: null,
+            rooms: []
+        };
+
+        // Room configuration
+        const roomConfig = {
+            bedroom: { icon: '🛏️', name: 'Bedroom', defaultLength: 12, defaultBreadth: 10, color: '#3b82f6' },
+            kitchen: { icon: '🍳', name: 'Kitchen', defaultLength: 10, defaultBreadth: 8, color: '#f59e0b' },
+            toilet: { icon: '🚽', name: 'Toilet', defaultLength: 6, defaultBreadth: 5, color: '#06b6d4' },
+            hall: { icon: '🏛️', name: 'Hall', defaultLength: 15, defaultBreadth: 12, color: '#8b5cf6' },
+            veranda: { icon: '🌿', name: 'Veranda', defaultLength: 8, defaultBreadth: 4, color: '#10b981' }
+        };
+
+        // Symbol/Furniture definitions
+        const symbols = {
+            bed: { emoji: '🛏️', width: 80, height: 60 },
+            sofa: { emoji: '🛋️', width: 90, height: 40 },
+            table: { emoji: '🪑', width: 70, height: 70 },
+            toilet: { emoji: '🚽', width: 30, height: 40 },
+            sink: { emoji: '🚿', width: 40, height: 30 },
+            stove: { emoji: '🔥', width: 30, height: 30 },
+            fridge: { emoji: '🧊', width: 35, height: 35 },
+            plant: { emoji: '🪴', width: 25, height: 25 }
+        };
+
+        let selectedRoomType = null;
+        let currentRoom = null;
+        let placingRoom = false;
+
+        // Initialize
+        function init() {
+            canvas.addEventListener('mousedown', handleMouseDown);
+            canvas.addEventListener('mousemove', handleMouseMove);
+            canvas.addEventListener('mouseup', handleMouseUp);
+            canvas.addEventListener('click', handleCanvasClick);
+            canvas.addEventListener('dragover', (e) => e.preventDefault());
+            canvas.addEventListener('drop', handleDrop);
+            
+            // Add Keyboard listeners for Ctrl+Z and Ctrl+Y
+            window.addEventListener('keydown', handleKeyDown);
+
+            updateDimensionDisplay();
+            updateLayerCounts();
+        }
+
+        // --- UNDO / REDO LOGIC ---
+        
+        function saveState() {
+            const state = JSON.stringify({
+                elements: elements,
+                rooms: project.rooms
+            });
+            undoStack.push(state);
+            if (undoStack.length > 50) undoStack.shift(); // Limit history
+            redoStack = []; // Clear redo on new action
+        }
+
+        function undo() {
+            if (undoStack.length === 0) {
+                showToast('ℹ️', 'Nothing to undo');
+                return;
+            }
+            const currentState = JSON.stringify({
+                elements: elements,
+                rooms: project.rooms
+            });
+            redoStack.push(currentState);
+
+            const prevState = JSON.parse(undoStack.pop());
+            elements = prevState.elements;
+            project.rooms = prevState.rooms;
+            
+            redrawAll();
+            updateLayerCounts();
+            updateDimensionDisplay();
+            showToast('↶', 'Undo successful');
+        }
+
+        function redo() {
+            if (redoStack.length === 0) {
+                showToast('ℹ️', 'Nothing to redo');
+                return;
+            }
+            const currentState = JSON.stringify({
+                elements: elements,
+                rooms: project.rooms
+            });
+            undoStack.push(currentState);
+
+            const nextState = JSON.parse(redoStack.pop());
+            elements = nextState.elements;
+            project.rooms = nextState.rooms;
+
+            redrawAll();
+            updateLayerCounts();
+            updateDimensionDisplay();
+            showToast('↷', 'Redo successful');
+        }
+
+        function handleKeyDown(e) {
+            // Ctrl + Z
+            if (e.ctrlKey && e.key.toLowerCase() === 'z') {
+                e.preventDefault();
+                undo();
+            }
+            // Ctrl + Y
+            if (e.ctrlKey && e.key.toLowerCase() === 'y') {
+                e.preventDefault();
+                redo();
+            }
+        }
+
+        // Project Modal Functions
+        function openProjectModal() {
+            document.getElementById('projectModal').classList.add('active');
+        }
+
+        function closeProjectModal() {
+            document.getElementById('projectModal').classList.remove('active');
+        }
+
+        function createProject() {
+            const name = document.getElementById('projectNameInput').value;
+            const type = document.getElementById('homeType').value;
+            const length = parseInt(document.getElementById('homeLength').value);
+            const breadth = parseInt(document.getElementById('homeBreadth').value);
+
+            if (!name || !length || !breadth) {
+                alert('Please fill all fields');
+                return;
+            }
+
+            project.name = name;
+            project.type = type;
+            project.totalLength = length;
+            project.totalBreadth = breadth;
+
+            // Draw home boundary wall
+            drawHomeWall();
+            
+            // Hide welcome screen
+            document.getElementById('welcomeScreen').style.display = 'none';
+            
+            // Update displays
+            updateDimensionDisplay();
+            updateLayerCounts();
+
+            closeProjectModal();
+            
+            showToast('✓', 'Project created! Now select rooms or use drawing tools.');
+        }
+
+        function drawHomeWall() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            if (showGrid) drawGrid();
+            
+            const wallWidth = project.totalLength * SCALE;
+            const wallHeight = project.totalBreadth * SCALE;
+            
+            // Center the wall on canvas
+            const x = (canvas.width - wallWidth) / 2;
+            const y = (canvas.height - wallHeight) / 2;
+            
+            project.homeWall = { x, y, width: wallWidth, height: wallHeight };
+            
+            // Draw background
+            ctx.fillStyle = '#f9fafb';
+            ctx.fillRect(x, y, wallWidth, wallHeight);
+            
+            // Draw wall border (thick outer walls)
+            ctx.strokeStyle = '#1e293b';
+            ctx.lineWidth = 10;
+            ctx.strokeRect(x, y, wallWidth, wallHeight);
+            
+            // Draw title
+            ctx.fillStyle = '#1e293b';
+            ctx.font = 'bold 18px DM Sans';
+            ctx.textAlign = 'center';
+            ctx.fillText(project.name, canvas.width / 2, y - 30);
+            
+            // Draw dimensions
+            ctx.font = '13px DM Sans';
+            ctx.fillStyle = '#64748b';
+            ctx.fillText(`${project.totalLength}' × ${project.totalBreadth}' ${project.type}`, canvas.width / 2, y - 10);
+        }
+
+        function drawGrid() {
+            ctx.save();
+            ctx.strokeStyle = '#e5e7eb';
+            ctx.lineWidth = 0.5;
+            
+            for (let x = 0; x <= canvas.width; x += gridSnap) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            
+            for (let y = 0; y <= canvas.height; y += gridSnap) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        // Room Modal Functions
+        function selectRoom(roomType) {
+            if (!project.homeWall) {
+                showToast('⚠️', 'Please create a project first!');
+                openProjectModal();
+                return;
+            }
+
+            selectedRoomType = roomType;
+            const config = roomConfig[roomType];
+            
+            // Update modal
+            document.getElementById('roomModalIcon').textContent = config.icon;
+            document.getElementById('roomModalTitle').textContent = config.name;
+            document.getElementById('roomNameBadge').textContent = config.name;
+            document.getElementById('roomName').value = '';
+            document.getElementById('roomName').placeholder = config.name;
+            document.getElementById('roomLength').value = config.defaultLength;
+            document.getElementById('roomBreadth').value = config.defaultBreadth;
+            document.getElementById('roomColor').value = config.color;
+            
+            document.getElementById('roomModal').classList.add('active');
+        }
+
+        function closeRoomModal() {
+            document.getElementById('roomModal').classList.remove('active');
+            selectedRoomType = null;
+            placingRoom = false;
+            document.querySelectorAll('.room-item').forEach(item => item.classList.remove('placing'));
+        }
+
+        function saveRoom() {
+            const roomName = document.getElementById('roomName').value || roomConfig[selectedRoomType].name;
+            const length = parseInt(document.getElementById('roomLength').value);
+            const breadth = parseInt(document.getElementById('roomBreadth').value);
+            const color = document.getElementById('roomColor').value;
+
+            if (!length || !breadth) {
+                alert('Please enter valid dimensions');
+                return;
+            }
+
+            // Check if room fits
+            if (length > project.totalLength || breadth > project.totalBreadth) {
+                alert(`Room is too large! Maximum: ${project.totalLength}' × ${project.totalBreadth}'`);
+                return;
+            }
+
+            currentRoom = {
+                type: selectedRoomType,
+                name: roomName,
+                length: length,
+                breadth: breadth,
+                width: length * SCALE,
+                height: breadth * SCALE,
+                color: color,
+                icon: roomConfig[selectedRoomType].icon
+            };
+
+            placingRoom = true;
+            closeRoomModal();
+            
+            // Update room size display
+            document.getElementById(`${selectedRoomType}-size`).textContent = `${length}' × ${breadth}'`;
+            
+            // Highlight the room being placed
+            document.getElementById(`room-${selectedRoomType}`).classList.add('placing');
+            
+            showToast('📍', 'Click inside the home boundary to place the room');
+        }
+
+        // Tool Selection
+        function selectTool(tool) {
+            currentTool = tool;
+            placingRoom = false;
+            document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`tool-${tool}`).classList.add('active');
+            document.querySelectorAll('.room-item').forEach(item => item.classList.remove('placing'));
+            
+            if (tool === 'select') {
+                canvas.style.cursor = 'default';
+            } else {
+                canvas.style.cursor = 'crosshair';
+            }
+        }
+
+        // Canvas Event Handlers
+        function handleMouseDown(e) {
+            if (placingRoom) return; // Don't draw when placing rooms
+            
+            const rect = canvas.getBoundingClientRect();
+            startX = snapToGrid(e.clientX - rect.left);
+            startY = snapToGrid(e.clientY - rect.top);
+            isDrawing = true;
+
+            if (currentTool === 'text') {
+                addText(startX, startY);
+                isDrawing = false;
+            }
+        }
+
+        function handleMouseMove(e) {
+            const rect = canvas.getBoundingClientRect();
+            const currentX = Math.floor(e.clientX - rect.left);
+            const currentY = Math.floor(e.clientY - rect.top);
+
+            if (isDrawing && !placingRoom) {
+                redrawAll();
+                drawPreview(startX, startY, snapToGrid(currentX), snapToGrid(currentY));
+            }
+        }
+
+        function handleMouseUp(e) {
+            if (!isDrawing || placingRoom) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            const endX = snapToGrid(e.clientX - rect.left);
+            const endY = snapToGrid(e.clientY - rect.top);
+            
+            if (Math.abs(endX - startX) > 5 || Math.abs(endY - startY) > 5) {
+                saveState(); // Save state before change
+                addElement(currentTool, startX, startY, endX, endY);
+            }
+            
+            isDrawing = false;
+            redrawAll();
+        }
+
+        function handleCanvasClick(e) {
+            if (!placingRoom || !currentRoom || !project.homeWall) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const clickY = e.clientY - rect.top;
+
+            // Check if click is inside home boundary
+            const { x, y, width, height } = project.homeWall;
+            
+            if (clickX >= x + 15 && clickX <= x + width - 15 && 
+                clickY >= y + 15 && clickY <= y + height - 15) {
+                
+                // Snap to grid
+                const gridSize = 5 * SCALE;
+                const roomX = Math.round((clickX - x) / gridSize) * gridSize + x;
+                const roomY = Math.round((clickY - y) / gridSize) * gridSize + y;
+                
+                // Check if room fits at this position
+                if (roomX + currentRoom.width <= x + width - 10 && 
+                    roomY + currentRoom.height <= y + height - 10) {
+                    
+                    saveState(); // Save state before placing room
+
+                    currentRoom.x = roomX;
+                    currentRoom.y = roomY;
+                    
+                    project.rooms.push(currentRoom);
+                    
+                    // Update displays
+                    updateDimensionDisplay();
+                    updateLayerCounts();
+                    redrawAll();
+                    
+                    placingRoom = false;
+                    currentRoom = null;
+                    document.querySelectorAll('.room-item').forEach(item => item.classList.remove('placing'));
+                    
+                    showToast('✓', 'Room placed successfully!');
+                } else {
+                    showToast('⚠️', 'Room doesn\'t fit at this position!');
+                }
+            } else {
+                showToast('⚠️', 'Please click inside the home boundary!');
+            }
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            const symbolType = e.dataTransfer.getData('symbol');
+            const rect = canvas.getBoundingClientRect();
+            const x = snapToGrid(e.clientX - rect.left);
+            const y = snapToGrid(e.clientY - rect.top);
+            
+            saveState(); // Save state before dropping symbol
+            addSymbol(symbolType, x, y);
+        }
+
+        // Drawing Functions
+        function snapToGrid(value) {
+            if (snapEnabled && gridSnap > 0) {
+                return Math.round(value / gridSnap) * gridSnap;
+            }
+            return value;
+        }
+
+        function addElement(type, x1, y1, x2, y2) {
+            const element = {
+                type: type,
+                x1: x1,
+                y1: y1,
+                x2: x2,
+                y2: y2,
+                color: document.getElementById('wallColor').value,
+                thickness: parseInt(document.getElementById('wallThickness').value)
+            };
+            
+            elements.push(element);
+            updateLayerCounts();
+            updateDimensionDisplay();
+        }
+
+        function addSymbol(symbolType, x, y) {
+            const element = {
+                type: 'symbol',
+                symbolType: symbolType,
+                x: x,
+                y: y
+            };
+            
+            elements.push(element);
+            updateLayerCounts();
+            redrawAll();
+        }
+
+        function addText(x, y) {
+            const text = prompt('Enter text:');
+            if (text) {
+                saveState(); // Save state before adding text
+                elements.push({
+                    type: 'text',
+                    text: text,
+                    x: x,
+                    y: y,
+                    fontSize: 14,
+                    color: '#1e293b'
+                });
+                updateLayerCounts();
+                redrawAll();
+            }
+        }
+
+        function drawPreview(x1, y1, x2, y2) {
+            ctx.save();
+            ctx.setLineDash([5, 5]);
+            ctx.strokeStyle = '#3b82f6';
+            ctx.lineWidth = 2;
+            
+            switch(currentTool) {
+                case 'wall':
+                    ctx.lineWidth = parseInt(document.getElementById('wallThickness').value);
+                    ctx.strokeStyle = document.getElementById('wallColor').value;
+                    ctx.beginPath();
+                    ctx.moveTo(x1, y1);
+                    ctx.lineTo(x2, y2);
+                    ctx.stroke();
+                    break;
+                case 'door':
+                    drawDoor(x1, y1, x2, y2, true);
+                    break;
+                case 'window':
+                    drawWindow(x1, y1, x2, y2, true);
+                    break;
+                case 'dimension':
+                    drawDimensionLine(x1, y1, x2, y2);
+                    break;
+            }
+            
+            ctx.restore();
+        }
+
+        function drawElement(element) {
+            ctx.save();
+            
+            switch(element.type) {
+                case 'wall':
+                    ctx.strokeStyle = element.color;
+                    ctx.lineWidth = element.thickness;
+                    ctx.lineCap = 'round';
+                    ctx.beginPath();
+                    ctx.moveTo(element.x1, element.y1);
+                    ctx.lineTo(element.x2, element.y2);
+                    ctx.stroke();
+                    drawWallDimension(element.x1, element.y1, element.x2, element.y2, element.color);
+                    break;
+                case 'door':
+                    drawDoor(element.x1, element.y1, element.x2, element.y2, false);
+                    break;
+                case 'window':
+                    drawWindow(element.x1, element.y1, element.x2, element.y2, false);
+                    break;
+                case 'dimension':
+                    drawDimensionLine(element.x1, element.y1, element.x2, element.y2);
+                    break;
+                case 'symbol':
+                    drawSymbol(element);
+                    break;
+                case 'text':
+                    ctx.font = `${element.fontSize}px DM Sans`;
+                    ctx.fillStyle = element.color;
+                    ctx.fillText(element.text, element.x, element.y);
+                    break;
+            }
+            
+            ctx.restore();
+        }
+
+        function drawWallDimension(x1, y1, x2, y2, color) {
+            ctx.save();
+            const distance = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+            const lengthFt = (distance / SCALE).toFixed(1);
+            const midX = (x1 + x2) / 2;
+            const midY = (y1 + y2) / 2;
+            const angle = Math.atan2(y2 - y1, x2 - x1);
+            const offsetDistance = 20;
+            const offsetX = Math.sin(angle) * offsetDistance;
+            const offsetY = -Math.cos(angle) * offsetDistance;
+            const textX = midX + offsetX;
+            const textY = midY + offsetY;
+            
+            ctx.font = 'bold 12px DM Sans';
+            const textWidth = ctx.measureText(`${lengthFt} ft`).width;
+            const padding = 6;
+            
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+            ctx.fillRect(textX - textWidth / 2 - padding, textY - 10, textWidth + padding * 2, 20);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 1.5;
+            ctx.strokeRect(textX - textWidth / 2 - padding, textY - 10, textWidth + padding * 2, 20);
+            
+            ctx.fillStyle = color;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(`${lengthFt} ft`, textX, textY);
+            ctx.restore();
+        }
+
+        function drawDoor(x1, y1, x2, y2, preview) {
+            const width = Math.abs(x2 - x1);
+            const height = Math.abs(y2 - y1);
+            const minX = Math.min(x1, x2);
+            const minY = Math.min(y1, y2);
+            
+            ctx.fillStyle = preview ? 'rgba(139, 69, 19, 0.5)' : '#8B4513';
+            ctx.fillRect(minX, minY, width, height);
+            ctx.strokeStyle = preview ? 'rgba(101, 67, 33, 0.7)' : '#654321';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(minX, minY, width, height);
+            
+            ctx.strokeStyle = preview ? 'rgba(101, 67, 33, 0.5)' : '#654321';
+            ctx.beginPath();
+            if (width > height) {
+                ctx.arc(minX, minY, width, 0, Math.PI / 2);
+            } else {
+                ctx.arc(minX, minY, height, 0, Math.PI / 2);
+            }
+            ctx.stroke();
+            
+            if (!preview) {
+                drawRectangleDimensions(minX, minY, width, height, '#8B4513');
+            }
+        }
+
+        function drawWindow(x1, y1, x2, y2, preview) {
+            const width = Math.abs(x2 - x1);
+            const height = Math.abs(y2 - y1);
+            const minX = Math.min(x1, x2);
+            const minY = Math.min(y1, y2);
+            
+            ctx.fillStyle = preview ? 'rgba(173, 216, 230, 0.5)' : '#ADD8E6';
+            ctx.fillRect(minX, minY, width, height);
+            ctx.strokeStyle = preview ? 'rgba(70, 130, 180, 0.7)' : '#4682B4';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(minX, minY, width, height);
+            
+            const midX = minX + width / 2;
+            const midY = minY + height / 2;
+            ctx.beginPath();
+            ctx.moveTo(midX, minY);
+            ctx.lineTo(midX, minY + height);
+            ctx.moveTo(minX, midY);
+            ctx.lineTo(minX + width, midY);
+            ctx.stroke();
+            
+            if (!preview) {
+                drawRectangleDimensions(minX, minY, width, height, '#4682B4');
+            }
+        }
+
+        function drawDimensionLine(x1, y1, x2, y2) {
+            ctx.strokeStyle = '#2563eb';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([]);
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+            
+            const angle = Math.atan2(y2 - y1, x2 - x1);
+            const arrowLength = 10;
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x1 + arrowLength * Math.cos(angle + Math.PI / 6), y1 + arrowLength * Math.sin(angle + Math.PI / 6));
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x1 + arrowLength * Math.cos(angle - Math.PI / 6), y1 + arrowLength * Math.sin(angle - Math.PI / 6));
+            ctx.stroke();
+            
+            const distance = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+            const measurement = (distance / SCALE).toFixed(1);
+            ctx.font = 'bold 12px DM Sans';
+            ctx.fillStyle = '#2563eb';
+            ctx.textAlign = 'center';
+            ctx.fillText(`${measurement} ft`, (x1 + x2) / 2, ((y1 + y2) / 2) - 5);
+        }
+
+        function drawRectangleDimensions(x, y, width, height, color) {
+            ctx.save();
+            ctx.font = 'bold 11px DM Sans';
+            ctx.fillStyle = color;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            const lengthFt = (width / SCALE).toFixed(1);
+            const breadthFt = (height / SCALE).toFixed(1);
+            const areaFt = (lengthFt * breadthFt).toFixed(1);
+            
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+            ctx.fillRect(x + width / 2 - 35, y + height / 2 - 25, 70, 50);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 1;
+            ctx.strokeRect(x + width / 2 - 35, y + height / 2 - 25, 70, 50);
+            
+            ctx.fillStyle = color;
+            ctx.fillText(`L: ${lengthFt}'`, x + width / 2, y + height / 2 - 12);
+            ctx.fillText(`B: ${breadthFt}'`, x + width / 2, y + height / 2 + 3);
+            ctx.fillText(`Area: ${areaFt} sq ft`, x + width / 2, y + height / 2 + 18);
+            ctx.restore();
+        }
+
+        function drawSymbol(element) {
+            const symbol = symbols[element.symbolType];
+            ctx.font = `${symbol.height}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(symbol.emoji, element.x, element.y);
+        }
+
+        function drawAllRooms() {
+            project.rooms.forEach(room => {
+                ctx.fillStyle = room.color + '30';
+                ctx.fillRect(room.x, room.y, room.width, room.height);
+                ctx.strokeStyle = room.color;
+                ctx.lineWidth = 4;
+                ctx.strokeRect(room.x, room.y, room.width, room.height);
+                ctx.font = '32px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(room.icon, room.x + room.width / 2, room.y + room.height / 2 - 15);
+                ctx.font = 'bold 14px DM Sans';
+                ctx.fillStyle = '#1e293b';
+                ctx.fillText(room.name, room.x + room.width / 2, room.y + room.height / 2 + 20);
+                ctx.font = '11px DM Sans';
+                ctx.fillStyle = '#64748b';
+                ctx.fillText(`${room.length}' × ${room.breadth}'`, room.x + room.width / 2, room.y + room.height / 2 + 35);
+            });
+        }
+
+        function redrawAll() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (showGrid) drawGrid();
+            if (project.homeWall) {
+                const { x, y, width, height } = project.homeWall;
+                ctx.fillStyle = '#f9fafb';
+                ctx.fillRect(x, y, width, height);
+                ctx.strokeStyle = '#1e293b';
+                ctx.lineWidth = 10;
+                ctx.strokeRect(x, y, width, height);
+                ctx.fillStyle = '#1e293b';
+                ctx.font = 'bold 18px DM Sans';
+                ctx.textAlign = 'center';
+                ctx.fillText(project.name, canvas.width / 2, y - 30);
+                ctx.font = '13px DM Sans';
+                ctx.fillStyle = '#64748b';
+                ctx.fillText(`${project.totalLength}' × ${project.totalBreadth}' ${project.type}`, canvas.width / 2, y - 10);
+            }
+            drawAllRooms();
+            elements.forEach(element => drawElement(element));
+        }
+
+        function dragSymbol(event, symbolType) {
+            event.dataTransfer.setData('symbol', symbolType);
+        }
+
+        function updateDimensionDisplay() {
+            document.getElementById('totalLength').textContent = project.totalLength || 0;
+            document.getElementById('totalBreadth').textContent = project.totalBreadth || 0;
+            if (!project.homeWall) {
+                document.getElementById('balanceLength').textContent = '0';
+                document.getElementById('balanceBreadth').textContent = '0';
+                return;
+            }
+            let maxUsedX = 0, maxUsedY = 0;
+            const homeX = project.homeWall.x, homeY = project.homeWall.y;
+            project.rooms.forEach(room => {
+                maxUsedX = Math.max(maxUsedX, (room.x - homeX + room.width) / SCALE);
+                maxUsedY = Math.max(maxUsedY, (room.y - homeY + room.height) / SCALE);
+            });
+            elements.forEach(element => {
+                if (element.type === 'wall' || element.type === 'door' || element.type === 'window') {
+                    maxUsedX = Math.max(maxUsedX, (Math.max(element.x1, element.x2) - homeX) / SCALE);
+                    maxUsedY = Math.max(maxUsedY, (Math.max(element.y1, element.y2) - homeY) / SCALE);
+                }
+            });
+            document.getElementById('balanceLength').textContent = Math.max(0, project.totalLength - maxUsedX).toFixed(1);
+            document.getElementById('balanceBreadth').textContent = Math.max(0, project.totalBreadth - maxUsedY).toFixed(1);
+        }
+
+        function updateLayerCounts() {
+            const counts = { home: project.homeWall ? 1 : 0, rooms: project.rooms.length, walls: 0, doorWindow: 0, furniture: 0 };
+            elements.forEach(element => {
+                if (element.type === 'wall') counts.walls++;
+                else if (element.type === 'door' || element.type === 'window') counts.doorWindow++;
+                else if (element.type === 'symbol') counts.furniture++;
+            });
+            document.getElementById('homeCount').textContent = counts.home;
+            document.getElementById('roomsCount').textContent = counts.rooms;
+            document.getElementById('wallCount').textContent = counts.walls;
+            document.getElementById('doorWindowCount').textContent = counts.doorWindow;
+            document.getElementById('furnitureCount').textContent = counts.furniture;
+        }
+
+        function updateScale() {
+            SCALE = parseInt(document.getElementById('scaleSelect').value);
+            if (project.homeWall) {
+                project.homeWall.width = project.totalLength * SCALE;
+                project.homeWall.height = project.totalBreadth * SCALE;
+                project.homeWall.x = (canvas.width - project.homeWall.width) / 2;
+                project.homeWall.y = (canvas.height - project.homeWall.height) / 2;
+                project.rooms = []; // Simplified: Resetting rooms on scale change for math consistency
+            }
+            redrawAll();
+        }
+
+        function updateGrid() {
+            gridSnap = parseInt(document.getElementById('gridSelect').value);
+            redrawAll();
+        }
+
+        function toggleGrid() {
+            showGrid = !showGrid;
+            redrawAll();
+        }
+
+        function toggleSnap() {
+            snapEnabled = !snapEnabled;
+            showToast('🧲', `Snap: ${snapEnabled ? 'ON' : 'OFF'}`);
+        }
+
+        function clearCanvas() {
+            if (confirm('Clear all elements? (Home boundary and rooms will be kept)')) {
+                saveState();
+                elements = [];
+                updateLayerCounts();
+                updateDimensionDisplay();
+                redrawAll();
+                showToast('✓', 'Elements cleared');
+            }
+        }
+
+        function exportDesign() {
+            if (!project.homeWall) {
+                showToast('⚠️', 'Please create a project first!');
+                return;
+            }
+            const link = document.createElement('a');
+            link.download = `${project.name || 'floor-plan'}.png`;
+            link.href = canvas.toDataURL();
+            link.click();
+            showToast('✓', 'Design exported successfully!');
+        }
+
+        function saveProject() {
+            if (!project.homeWall) {
+                showToast('⚠️', 'Please create a project first!');
+                return;
+            }
+            const dataStr = JSON.stringify({ project: project, elements: elements });
+            const link = document.createElement('a');
+            link.download = `${project.name || 'floor-plan'}.json`;
+            link.href = URL.createObjectURL(new Blob([dataStr], { type: 'application/json' }));
+            link.click();
+            showToast('✓', 'Project saved successfully!');
+        }
+
+        function showToast(icon, message) {
+            const toast = document.getElementById('toast');
+            document.querySelector('.toast-icon').textContent = icon;
+            document.getElementById('toastMessage').textContent = message;
+            toast.classList.add('active');
+            setTimeout(() => toast.classList.remove('active'), 3000);
+        }
+
+        init();
+    </script>
+</body>
+</html>
