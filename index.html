@@ -3347,6 +3347,12 @@
         function dragSymbol(event, symbolType) {
             event.dataTransfer.setData('symbol', symbolType);
 
+            // For mobile: also activate tap-to-place mode
+            // This ensures drag works on mobile by falling back to tap placement
+            if ('ontouchstart' in window) {
+                pickItem(symbolType);
+            }
+
             // Auto-close mobile sidebar on drag
             const sidebar = document.getElementById('sidebarLeft');
             if (sidebar.classList.contains('mobile-active')) {
