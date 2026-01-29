@@ -925,7 +925,7 @@
 
             <div class="header-actions">
                 <button class="btn btn-primary" onclick="openProjectModal()">
-                    <span>📄</span> <span>New Project</span>
+                    <span>📄</span> <span>Reset Project</span>
                 </button>
                 <button class="btn btn-secondary btn-icon" onclick="undo()" title="Undo (Ctrl+Z)">
                     <span>↶</span>
@@ -1288,7 +1288,7 @@
         <div class="modal">
             <div class="modal-header">
                 <h2 class="modal-title">
-                    <span>🏗️</span> New Project Setup
+                    <span>🏗️</span> Project Setup
                 </h2>
                 <button class="modal-close" onclick="closeProjectModal()">×</button>
             </div>
@@ -1623,7 +1623,27 @@
 
         // Project Modal Functions
         function openProjectModal() {
+            if (project.homeWall) {
+                if (confirm('Are you sure you want to reset the current design? All your rooms and drawn elements will be cleared.')) {
+                    performProjectReset();
+                }
+                return;
+            }
             document.getElementById('projectModal').classList.add('active');
+        }
+
+        function performProjectReset() {
+            elements = [];
+            project.rooms = [];
+            offsetX = 0;
+            offsetY = 0;
+            undoStack = [];
+            redoStack = [];
+
+            drawHomeWall();
+            updateDimensionDisplay();
+            updateLayerCounts();
+            showToast('✓', 'Design cleared successfully');
         }
 
         function closeProjectModal() {
@@ -1646,6 +1666,14 @@
             project.totalLength = length;
             project.totalBreadth = breadth;
 
+            // Clear existing work if any
+            elements = [];
+            project.rooms = [];
+            offsetX = 0;
+            offsetY = 0;
+            undoStack = [];
+            redoStack = [];
+
             // Draw home boundary wall
             drawHomeWall();
 
@@ -1658,7 +1686,7 @@
 
             closeProjectModal();
 
-            showToast('✓', 'Project created! Now select rooms or use drawing tools.');
+            showToast('✓', 'Project reset! Now select rooms or use drawing tools.');
         }
 
         function drawHomeWall() {
@@ -1701,45 +1729,51 @@
             ctx.strokeStyle = '#e5e7eb';
             ctx.lineWidth = 0.5;
 
+            // Calculate visible range based on current panning
+            const startX = Math.floor(-offsetX / gridSnap) * gridSnap;
+            const endX = startX + canvas.width + gridSnap;
+            const startY = Math.floor(-offsetY / gridSnap) * gridSnap;
+            const endY = startY + canvas.height + gridSnap;
+
             // Draw vertical lines
-            for (let x = 0; x <= canvas.width; x += gridSnap) {
+            for (let x = startX; x <= endX; x += gridSnap) {
                 ctx.beginPath();
-                ctx.moveTo(x, 0);
-                ctx.lineTo(x, canvas.height);
+                ctx.moveTo(x, startY);
+                ctx.lineTo(x, endY);
                 ctx.stroke();
             }
 
             // Draw horizontal lines
-            for (let y = 0; y <= canvas.height; y += gridSnap) {
+            for (let y = startY; y <= endY; y += gridSnap) {
                 ctx.beginPath();
-                ctx.moveTo(0, y);
-                ctx.lineTo(canvas.width, y);
+                ctx.moveTo(startX, y);
+                ctx.lineTo(endX, y);
                 ctx.stroke();
             }
 
             // Draw numbers if enabled
             if (showGridNumbers) {
                 // Account for panning to keep numbers sticky to viewport
-                const stickyY = Math.max(0, -offsetY) + 12;
-                const stickyX = Math.max(0, -offsetX) + 12;
+                const stickyY = Math.max(startY, -offsetY) + 12;
+                const stickyX = Math.max(startX, -offsetX) + 12;
 
                 ctx.font = `bold ${Math.max(10, gridSnap / 3.5)}px DM Sans`;
                 ctx.fillStyle = '#64748b';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
 
-                // Horizontal numbering (Top Row)
-                for (let x = 0; x < canvas.width; x += gridSnap) {
+                // Horizontal numbering (Viewport Sticky Top)
+                for (let x = startX; x <= endX; x += gridSnap) {
                     const val = Math.floor(x / gridSnap) + 1;
-                    if (x + gridSnap / 2 < canvas.width) {
+                    if (x >= 0 && x + gridSnap / 2 < canvas.width + Math.abs(offsetX)) { // Only show positive feet
                         ctx.fillText(val.toString(), x + gridSnap / 2, stickyY);
                     }
                 }
 
-                // Vertical numbering (Left Column)
-                for (let y = gridSnap; y < canvas.height; y += gridSnap) {
+                // Vertical numbering (Viewport Sticky Left)
+                for (let y = startY + gridSnap; y <= endY; y += gridSnap) {
                     const val = Math.floor(y / gridSnap) + 1;
-                    if (y + gridSnap / 2 < canvas.height) {
+                    if (y >= 0 && y + gridSnap / 2 < canvas.height + Math.abs(offsetY)) {
                         ctx.fillText(val.toString(), stickyX, y + gridSnap / 2);
                     }
                 }
