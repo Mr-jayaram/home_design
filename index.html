@@ -1400,6 +1400,11 @@
         let SCALE = 15; // pixels per foot
         let rotation = 0;
         let showGridNumbers = false;
+        let offsetX = 0;
+        let offsetY = 0;
+        let lastTouchX = 0;
+        let lastTouchY = 0;
+        let isPanning = false;
 
         // History Stacks
         let undoStack = [];
@@ -1466,16 +1471,36 @@
 
             // Touch events for mobile
             canvas.addEventListener('touchstart', (e) => {
-                handleMouseDown(e);
-                if (currentTool !== 'select' || placingRoom) e.preventDefault();
+                if (e.touches.length === 2) {
+                    isPanning = true;
+                    lastTouchX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+                    lastTouchY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+                } else if (e.touches.length === 1) {
+                    isPanning = false;
+                    handleMouseDown(e);
+                }
+                if (currentTool !== 'select' || placingRoom || e.touches.length > 1) e.preventDefault();
             }, { passive: false });
 
             canvas.addEventListener('touchmove', (e) => {
-                handleMouseMove(e);
-                if (currentTool !== 'select' || placingRoom) e.preventDefault();
+                if (e.touches.length === 2 && isPanning) {
+                    const currentTouchX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+                    const currentTouchY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+
+                    offsetX += currentTouchX - lastTouchX;
+                    offsetY += currentTouchY - lastTouchY;
+
+                    lastTouchX = currentTouchX;
+                    lastTouchY = currentTouchY;
+                    redrawAll();
+                } else if (e.touches.length === 1 && !isPanning) {
+                    handleMouseMove(e);
+                }
+                if (currentTool !== 'select' || placingRoom || e.touches.length > 1) e.preventDefault();
             }, { passive: false });
 
             canvas.addEventListener('touchend', (e) => {
+                if (e.touches.length < 2) isPanning = false;
                 handleMouseUp(e);
                 if (placingRoom) handleCanvasClick(e);
             }, { passive: false });
@@ -1694,9 +1719,9 @@
 
             // Draw numbers if enabled
             if (showGridNumbers) {
-                // Since fit to screen, sticky logic is simplified (always at top/left edge)
-                const stickyY = 12;
-                const stickyX = 12;
+                // Account for panning to keep numbers sticky to viewport
+                const stickyY = Math.max(0, -offsetY) + 12;
+                const stickyX = Math.max(0, -offsetX) + 12;
 
                 ctx.font = `bold ${Math.max(10, gridSnap / 3.5)}px DM Sans`;
                 ctx.fillStyle = '#64748b';
@@ -1843,22 +1868,38 @@
                 clientY = e.clientY;
             }
 
+            // Normalize coordinates based on visual scale vs internal size
+            // rect.width/height is the visual size on screen (respecting CSS rotation)
             let x = clientX - rect.left;
             let y = clientY - rect.top;
 
-            const scaleX = canvas.width / (rotation % 180 === 0 ? rect.width : rect.height);
-            const scaleY = canvas.height / (rotation % 180 === 0 ? rect.height : rect.width);
+            // Handle rotation mapping back to logical canvas coordinates
+            let logicalX, logicalY;
+            const sX = canvas.width / (rotation % 180 === 0 ? rect.width : rect.height);
+            const sY = canvas.height / (rotation % 180 === 0 ? rect.height : rect.width);
 
             if (rotation === 0) {
-                return { x: x * scaleX, y: y * scaleY };
+                logicalX = x * sX;
+                logicalY = y * sY;
             } else if (rotation === 90) {
-                return { x: y * scaleX, y: (rect.width - x) * scaleY };
+                logicalX = y * sX;
+                logicalY = (rect.width - x) * sY;
             } else if (rotation === 180) {
-                return { x: (rect.width - x) * scaleX, y: (rect.height - y) * scaleY };
+                logicalX = (rect.width - x) * sX;
+                logicalY = (rect.height - y) * sY;
             } else if (rotation === 270) {
-                return { x: (rect.height - y) * scaleX, y: x * scaleY };
+                logicalX = (rect.height - y) * sX;
+                logicalY = x * sY;
+            } else {
+                logicalX = x * sX;
+                logicalY = y * sY;
             }
-            return { x: x * scaleX, y: y * scaleY };
+
+            // Subtract panning offset AFTER rotation mapping
+            return {
+                x: logicalX - offsetX,
+                y: logicalY - offsetY
+            };
         }
 
         function handleMouseDown(e) {
@@ -2241,6 +2282,8 @@
 
         function redrawAll() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.save();
+            ctx.translate(offsetX, offsetY);
 
             if (project.homeWall) {
                 const { x, y, width, height } = project.homeWall;
@@ -2265,6 +2308,7 @@
             }
             drawAllRooms();
             elements.forEach(element => drawElement(element));
+            ctx.restore();
         }
 
         function dragSymbol(event, symbolType) {
@@ -2360,6 +2404,9 @@
 
         function fitToScreen() {
             if (!project.homeWall) return;
+
+            offsetX = 0;
+            offsetY = 0;
 
             const padding = 40;
             const availableWidth = canvas.width - padding;
