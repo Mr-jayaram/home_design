@@ -2394,11 +2394,24 @@
                 if (selectedRoom) {
                     let nextX = snapToGrid(currentX - dragOffsetX);
                     let nextY = snapToGrid(currentY - dragOffsetY);
+                    const snapDist = 15; // 1 foot snap range
 
-                    // Boundary Snapping to Neighbors
+                    // 1. Snap to Home Boundary
+                    if (project.homeWall) {
+                        const hx1 = project.homeWall.x, hy1 = project.homeWall.y;
+                        const hx2 = project.homeWall.x + project.homeWall.width, hy2 = project.homeWall.y + project.homeWall.height;
+
+                        // Vertical edges
+                        if (Math.abs(nextX - hx1) < snapDist) nextX = hx1;
+                        if (Math.abs((nextX + selectedRoom.width) - hx2) < snapDist) nextX = hx2 - selectedRoom.width;
+                        // Horizontal edges
+                        if (Math.abs(nextY - hy1) < snapDist) nextY = hy1;
+                        if (Math.abs((nextY + selectedRoom.height) - hy2) < snapDist) nextY = hy2 - selectedRoom.height;
+                    }
+
+                    // 2. Snap to Neighbor Rooms
                     project.rooms.forEach(other => {
                         if (other === selectedRoom) return;
-                        const snapDist = 15; // 1 foot snap range
 
                         // Vertical edge snaps (X)
                         if (Math.abs(nextX - other.x) < snapDist) nextX = other.x;
@@ -3222,6 +3235,12 @@
 
         function dragSymbol(event, symbolType) {
             event.dataTransfer.setData('symbol', symbolType);
+
+            // Auto-close mobile sidebar on drag
+            const sidebar = document.getElementById('sidebarLeft');
+            if (sidebar.classList.contains('mobile-active')) {
+                toggleMobileMenu();
+            }
         }
 
         function updateDimensionDisplay() {
@@ -3506,12 +3525,6 @@
                 return { x, z };
             };
 
-            // Outer Frame
-            create3DWall(-totalW3d / 2, -totalH3d / 2, totalW3d / 2, -totalH3d / 2, 10 * unit, 4, 0x1e293b); // North
-            create3DWall(-totalW3d / 2, totalH3d / 2, totalW3d / 2, totalH3d / 2, 10 * unit, 4, 0x1e293b); // South
-            create3DWall(-totalW3d / 2, -totalH3d / 2, -totalW3d / 2, totalH3d / 2, 10 * unit, 4, 0x1e293b); // West
-            create3DWall(totalW3d / 2, -totalH3d / 2, totalW3d / 2, totalH3d / 2, 10 * unit, 4, 0x1e293b); // East
-
             // Rooms Floors and Walls with De-duplication
             const globalThick = parseInt(document.getElementById('wallThickness').value) || 6;
             const globalWallColor = document.getElementById('wallColor').value || '#1e293b';
@@ -3525,6 +3538,15 @@
                 create3DWall(x1, z1, x2, z2, h, t, c);
                 wallRegistry.add(p1);
             }
+
+            // Outer Frame (Using structural registry to merge with room walls)
+            const frameH = 10 * unit;
+            const frameT = 4;
+            const frameC = 0x1e293b;
+            addStructuralWall(-totalW3d / 2, -totalH3d / 2, totalW3d / 2, -totalH3d / 2, frameH, frameT, frameC); // North
+            addStructuralWall(-totalW3d / 2, totalH3d / 2, totalW3d / 2, totalH3d / 2, frameH, frameT, frameC); // South
+            addStructuralWall(-totalW3d / 2, -totalH3d / 2, -totalW3d / 2, totalH3d / 2, frameH, frameT, frameC); // West
+            addStructuralWall(totalW3d / 2, -totalH3d / 2, totalW3d / 2, totalH3d / 2, frameH, frameT, frameC); // East
 
             project.rooms.forEach(room => {
                 const start = pxTo3d(room.x, room.y);
