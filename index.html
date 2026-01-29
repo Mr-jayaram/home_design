@@ -8,6 +8,9 @@
     <link
         href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Playfair+Display:wght@700&display=swap"
         rel="stylesheet">
+    <!-- Three.js for 3D View -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <style>
         * {
             margin: 0;
@@ -942,6 +945,10 @@
                 <button class="btn btn-secondary" onclick="saveProject()">
                     <span>💾</span> <span>Save</span>
                 </button>
+                <button id="viewToggleBtn" class="btn btn-primary" onclick="toggle3DView()"
+                    style="background: linear-gradient(135deg, #7c3aed, #2563eb); border: none; box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);">
+                    <span>🏠</span> <span id="viewToggleText">3D View</span>
+                </button>
             </div>
         </header>
 
@@ -1029,7 +1036,33 @@
                     </div>
                 </div>
 
-                <!-- Furniture Library -->
+                <!-- Stairs Library -->
+                <div class="sidebar-section">
+                    <div class="sidebar-title">
+                        <span>🪜</span> Stairs Library
+                    </div>
+                    <div class="symbol-item" draggable="true" ondragstart="dragSymbol(event, 'stair_straight')">
+                        <span class="symbol-icon">📏</span>
+                        <div class="symbol-info">
+                            <div class="symbol-name">Straight Stairs</div>
+                            <div class="symbol-size">10ft Length</div>
+                        </div>
+                    </div>
+                    <div class="symbol-item" draggable="true" ondragstart="dragSymbol(event, 'stair_lshape')">
+                        <span class="symbol-icon">📐</span>
+                        <div class="symbol-info">
+                            <div class="symbol-name">L-Shape Stairs</div>
+                            <div class="symbol-size">6ft x 6ft</div>
+                        </div>
+                    </div>
+                    <div class="symbol-item" draggable="true" ondragstart="dragSymbol(event, 'stair_spiral')">
+                        <span class="symbol-icon">🌀</span>
+                        <div class="symbol-info">
+                            <div class="symbol-name">Spiral Stairs</div>
+                            <div class="symbol-size">6ft Diameter</div>
+                        </div>
+                    </div>
+                </div>
                 <div class="sidebar-section">
                     <div class="sidebar-title">
                         <span>🪑</span> Furniture & Fixtures
@@ -1151,8 +1184,11 @@
                     </div>
                 </div>
 
-                <div class="canvas-wrapper">
+                <div class="canvas-wrapper" style="position: relative;">
                     <canvas id="designCanvas"></canvas>
+                    <div id="threeContainer"
+                        style="display: none; width: 100%; height: 100%; position: absolute; top: 0; left: 0; background: #f1f5f9;">
+                    </div>
                 </div>
             </main>
 
@@ -1181,6 +1217,41 @@
                                     style="background: #ef4444; color: white; border: none;">
                                     <span>🗑</span> Delete
                                 </button>
+                            </div>
+
+                            <!-- Scale Controls -->
+                            <div id="scaleCtrls"
+                                style="display: none; border-top: 1px solid #fecaca; padding-top: 10px;">
+                                <div
+                                    style="font-size: 11px; font-weight: bold; color: #991b1b; margin-bottom: 6px; text-transform: uppercase;">
+                                    Adjust Size</div>
+
+                                <div class="tool-grid"
+                                    style="grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+                                    <button class="btn btn-secondary" onclick="resizeSelected(0.9)"
+                                        style="background: white; border: 1px solid #fecaca; font-size: 11px;">
+                                        <span>➖</span> Scale Down
+                                    </button>
+                                    <button class="btn btn-secondary" onclick="resizeSelected(1.1)"
+                                        style="background: white; border: 1px solid #fecaca; font-size: 11px;">
+                                        <span>➕</span> Scale Up
+                                    </button>
+                                </div>
+
+                                <div style="display: flex; flex-direction: column; gap: 6px;">
+                                    <div style="display: flex; gap: 6px;">
+                                        <button class="btn btn-secondary" onclick="adjustDimension('width', -0.5)"
+                                            style="flex: 1; font-size: 10px; padding: 6px;">Short Width</button>
+                                        <button class="btn btn-secondary" onclick="adjustDimension('width', 0.5)"
+                                            style="flex: 1; font-size: 10px; padding: 6px;">Long Width</button>
+                                    </div>
+                                    <div style="display: flex; gap: 6px;">
+                                        <button class="btn btn-secondary" onclick="adjustDimension('length', -0.5)"
+                                            style="flex: 1; font-size: 10px; padding: 6px;">Short Length</button>
+                                        <button class="btn btn-secondary" onclick="adjustDimension('length', 0.5)"
+                                            style="flex: 1; font-size: 10px; padding: 6px;">Long Length</button>
+                                    </div>
+                                </div>
                             </div>
 
                             <!-- Door Specific Controls -->
@@ -1493,7 +1564,10 @@
             sink: { emoji: '🚿', width: 40, height: 30 },
             stove: { emoji: '🔥', width: 30, height: 30 },
             fridge: { emoji: '🧊', width: 35, height: 35 },
-            plant: { emoji: '🪴', width: 25, height: 25 }
+            plant: { emoji: '🪴', width: 25, height: 25 },
+            stair_straight: { isStair: true, stairType: 'straight', width: 3, length: 10, steps: 10 },
+            stair_lshape: { isStair: true, stairType: 'lshape', width: 3, length: 6, breadth: 6, steps: 12 },
+            stair_spiral: { isStair: true, stairType: 'spiral', radius: 3, steps: 12 }
         };
 
         let selectedRoomType = null;
@@ -2060,6 +2134,7 @@
                         }
                     }
                     isMovingElement = true;
+                    canvas.style.cursor = 'grabbing';
                     saveState();
                 } else {
                     selectedElement = null;
@@ -2090,8 +2165,35 @@
             for (let i = elements.length - 1; i >= 0; i--) {
                 const el = elements[i];
                 if (el.type === 'text' || el.type === 'symbol') {
-                    const size = 30; // Hit area
-                    if (Math.abs(x - el.x) < size && Math.abs(y - el.y) < size) {
+                    const config = symbols[el.symbolType];
+                    // Transform click coordinate into the element's local (rotated) space
+                    const dx = x - el.x;
+                    const dy = y - el.y;
+                    const rad = ((el.rotation || 0) * Math.PI) / 180;
+                    const localX = dx * Math.cos(-rad) - dy * Math.sin(-rad);
+                    const localY = dx * Math.sin(-rad) + dy * Math.cos(-rad);
+
+                    let w = 40, h = 40; // Base hit area
+                    if (config) {
+                        const s = SCALE;
+                        if (config.isStair) {
+                            w = (el.width || config.width) * s * (el.scale || 1);
+                            h = (el.length || config.length) * s * (el.scale || 1);
+                            if (config.stairType === 'spiral') {
+                                w = (el.radius || config.radius) * 2 * s * (el.scale || 1);
+                                h = w;
+                            } else if (config.stairType === 'lshape') {
+                                // For L-shape, allow selection in the larger footprint box
+                                w = Math.max(w, (el.breadth || config.breadth) * s * (el.scale || 1));
+                                h = Math.max(h, (el.length || config.length) * s * (el.scale || 1));
+                            }
+                        } else {
+                            w = config.width * (el.scale || 1);
+                            h = config.height * (el.scale || 1);
+                        }
+                    }
+                    // Check if clicked point is inside the bounding box (with 10px padding)
+                    if (Math.abs(localX) < (w / 2) + 10 && Math.abs(localY) < (h / 2) + 10) {
                         return { type: 'element', data: el };
                     }
                 } else {
@@ -2119,6 +2221,7 @@
             const typeName = document.getElementById('selectedTypeName');
             const typeIcon = document.getElementById('selectedTypeIcon');
             const doorCtrls = document.querySelectorAll('.door-ctrl');
+            const scaleCtrls = document.getElementById('scaleCtrls');
 
             if (selectedElement || selectedRoom) {
                 panel.style.display = 'block';
@@ -2133,6 +2236,9 @@
                 }
 
                 doorCtrls.forEach(c => c.style.display = (selectedElement?.type === 'door') ? 'block' : 'none');
+
+                const isScalable = selectedElement?.type === 'symbol' || selectedRoom;
+                scaleCtrls.style.display = isScalable ? 'block' : 'none';
             } else {
                 panel.style.display = 'none';
             }
@@ -2150,7 +2256,8 @@
                 selectedRoom.height = selectedRoom.breadth * SCALE;
             } else if (selectedElement) {
                 if (selectedElement.type === 'text' || selectedElement.type === 'symbol') {
-                    // Logic for text/symbol rotation can be added here
+                    selectedElement.rotation = (selectedElement.rotation || 0) + 90;
+                    if (selectedElement.rotation >= 360) selectedElement.rotation = 0;
                 } else {
                     // Rotate line around its center
                     const midX = (selectedElement.x1 + selectedElement.x2) / 2;
@@ -2168,7 +2275,70 @@
             }
             redrawAll();
             updateDimensionDisplay();
-            showToast('🔄', 'Rotated/Converted alignment');
+            showToast('🔄', 'Rotated selection');
+        }
+
+        function resizeSelected(factor) {
+            if (!selectedElement && !selectedRoom) return;
+            saveState();
+
+            if (selectedRoom) {
+                selectedRoom.length = Math.round(selectedRoom.length * factor * 2) / 2;
+                selectedRoom.breadth = Math.round(selectedRoom.breadth * factor * 2) / 2;
+                selectedRoom.width = selectedRoom.length * SCALE;
+                selectedRoom.height = selectedRoom.breadth * SCALE;
+            } else if (selectedElement?.type === 'symbol') {
+                selectedElement.scale = (selectedElement.scale || 1) * factor;
+                // Scale internal dimensional properties together
+                if (selectedElement.width) selectedElement.width *= factor;
+                if (selectedElement.length) selectedElement.length *= factor;
+                if (selectedElement.breadth) selectedElement.breadth *= factor;
+                if (selectedElement.radius) selectedElement.radius *= factor;
+
+                // Update step count for stairs based on new scale
+                const config = symbols[selectedElement.symbolType];
+                if (config?.isStair && selectedElement.steps) {
+                    if (config.stairType === 'straight') selectedElement.steps = Math.round(selectedElement.length);
+                    else if (config.stairType === 'lshape') selectedElement.steps = Math.round(selectedElement.length + selectedElement.breadth);
+                }
+            }
+            redrawAll();
+            updateDimensionDisplay();
+            showToast('📏', 'Resized proportionally');
+        }
+
+        function adjustDimension(dim, delta) {
+            if (!selectedElement && !selectedRoom) return;
+            saveState();
+
+            if (selectedRoom) {
+                if (dim === 'width') selectedRoom.length = Math.max(2, selectedRoom.length + delta);
+                if (dim === 'length') selectedRoom.breadth = Math.max(2, selectedRoom.breadth + delta);
+                selectedRoom.width = selectedRoom.length * SCALE;
+                selectedRoom.height = selectedRoom.breadth * SCALE;
+            } else if (selectedElement?.type === 'symbol') {
+                const config = symbols[selectedElement.symbolType];
+                if (dim === 'width') {
+                    if (selectedElement.width !== undefined) selectedElement.width = Math.max(1, selectedElement.width + delta);
+                    else if (selectedElement.breadth !== undefined) selectedElement.breadth = Math.max(1, selectedElement.breadth + delta);
+                    else if (selectedElement.radius !== undefined) selectedElement.radius = Math.max(1, selectedElement.radius + delta * 0.5);
+                } else if (dim === 'length') {
+                    if (selectedElement.length !== undefined) selectedElement.length = Math.max(1, selectedElement.length + delta);
+                    else if (selectedElement.radius !== undefined) selectedElement.radius = Math.max(1, selectedElement.radius + delta * 0.5);
+                }
+
+                // Link steps to dimensions for stairs
+                if (config?.isStair) {
+                    if (config.stairType === 'straight') {
+                        selectedElement.steps = Math.round(selectedElement.length || config.length);
+                    } else if (config.stairType === 'lshape') {
+                        selectedElement.steps = Math.round((selectedElement.length || config.length) + (selectedElement.breadth || config.breadth));
+                    }
+                }
+            }
+            redrawAll();
+            updateDimensionDisplay();
+            showToast('📏', `Adjusted ${dim}`);
         }
 
         function flipDoorHinge() {
@@ -2218,6 +2388,7 @@
             const currentY = pos.y;
 
             if (isMovingElement) {
+                canvas.style.cursor = 'grabbing';
                 if (selectedRoom) {
                     selectedRoom.x = snapToGrid(currentX - dragOffsetX);
                     selectedRoom.y = snapToGrid(currentY - dragOffsetY);
@@ -2234,9 +2405,16 @@
                         selectedElement.y2 += dy;
                     }
                 }
-                updateDimensionDisplay();
                 redrawAll();
                 return;
+            }
+
+            // Update cursor based on hover
+            if (currentTool === 'select') {
+                const target = findTarget(pos.x, pos.y);
+                canvas.style.cursor = target ? 'grab' : 'default';
+            } else {
+                canvas.style.cursor = 'crosshair';
             }
 
             if (isDrawing && !placingRoom) {
@@ -2248,11 +2426,16 @@
         function handleMouseUp(e) {
             if (isMovingElement) {
                 isMovingElement = false;
+                canvas.style.cursor = 'default';
                 redrawAll();
                 return;
             }
 
-            if (!isDrawing || placingRoom) return;
+            if (!isDrawing || placingRoom) {
+                if (currentTool === 'select') canvas.style.cursor = 'default';
+                else canvas.style.cursor = 'crosshair';
+                return;
+            }
 
             const pos = getMousePos(e);
             const endX = snapToGrid(pos.x);
@@ -2354,12 +2537,23 @@
         }
 
         function addSymbol(symbolType, x, y) {
+            const config = symbols[symbolType];
             const element = {
                 type: 'symbol',
                 symbolType: symbolType,
                 x: x,
-                y: y
+                y: y,
+                rotation: 0,
+                scale: 1
             };
+
+            // Copy architectural dimensions if they exist (to allow individual scaling)
+            if (config.width) element.width = config.width;
+            if (config.length) element.length = config.length;
+            if (config.breadth) element.breadth = config.breadth;
+            if (config.radius) element.radius = config.radius;
+            if (config.steps) element.steps = config.steps;
+            if (config.radius) element.radius = config.radius;
 
             elements.push(element);
             updateLayerCounts();
@@ -2423,8 +2617,24 @@
                 ctx.lineWidth = 2;
 
                 if (element.type === 'text' || element.type === 'symbol') {
-                    const size = 30;
-                    ctx.strokeRect(element.x - size / 2 - 5, element.y - size / 2 - 5, size + 10, size + 10);
+                    const config = symbols[element.symbolType];
+                    ctx.save();
+                    ctx.translate(element.x, element.y);
+                    ctx.rotate(((element.rotation || 0) * Math.PI) / 180);
+
+                    let w = 40, h = 40;
+                    if (config?.isStair) {
+                        const s = SCALE;
+                        w = (element.width || config.width) * s * (element.scale || 1);
+                        h = (element.length || config.length) * s * (element.scale || 1);
+                        if (config.stairType === 'spiral') { w = (element.radius || config.radius) * 2 * s * (element.scale || 1); h = w; }
+                        else if (config.stairType === 'lshape') { h = (element.breadth || config.breadth) * s * (element.scale || 1); } // L-shape is more complex, just use max dim for highlight
+                    } else if (config) {
+                        w = config.width * (element.scale || 1);
+                        h = config.height * (element.scale || 1);
+                    }
+                    ctx.strokeRect(-w / 2 - 5, -h / 2 - 5, w + 10, h + 10);
+                    ctx.restore();
                 } else if (element.x1 !== undefined) {
                     // Calculate distance and angle for line-based elements
                     const dist = Math.sqrt(Math.pow(element.x2 - element.x1, 2) + Math.pow(element.y2 - element.y1, 2));
@@ -2718,10 +2928,114 @@
                 console.warn(`Furniture/Symbol type "${element.symbolType}" not found.`);
                 return;
             }
-            ctx.font = `${symbol.height}px Arial`;
+
+            ctx.save();
+            ctx.translate(element.x, element.y);
+            const rot = element.rotation || 0;
+            ctx.rotate((rot * Math.PI) / 180);
+            const currentScale = element.scale || 1;
+            ctx.scale(currentScale, currentScale);
+
+            if (symbol.isStair) {
+                drawStairs(element, symbol);
+                ctx.restore();
+                return;
+            }
+
+            ctx.font = `${symbol.height || 30}px Arial`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText(symbol.emoji, element.x, element.y);
+            ctx.fillText(symbol.emoji, 0, 0); // Draw at (0,0) after translation/rotation
+            ctx.restore();
+        }
+
+        function drawStairs(element, config) {
+            ctx.strokeStyle = '#64748b';
+            ctx.lineWidth = 1.5;
+
+            const s = SCALE;
+
+            if (config.stairType === 'straight') {
+                const w = (element.width || config.width) * s;
+                const l = (element.length || config.length) * s;
+                const steps = element.steps || Math.round(l / s) || config.steps;
+
+                // Outline
+                ctx.strokeRect(-w / 2, -l / 2, w, l);
+
+                // Steps
+                for (let i = 1; i < steps; i++) {
+                    const stepY = -l / 2 + (l / steps) * i;
+                    ctx.beginPath();
+                    ctx.moveTo(-w / 2, stepY);
+                    ctx.lineTo(w / 2, stepY);
+                    ctx.stroke();
+                }
+                // Direction Arrow
+                ctx.beginPath();
+                ctx.moveTo(0, l / 2 - 10);
+                ctx.lineTo(0, -l / 2 + 10);
+                ctx.lineTo(-5, -l / 2 + 20);
+                ctx.moveTo(0, -l / 2 + 10);
+                ctx.lineTo(5, -l / 2 + 20);
+                ctx.stroke();
+
+            } else if (config.stairType === 'lshape') {
+                const w = (element.width || config.width) * s;
+                const l = (element.length || config.length) * s;
+                const b = (element.breadth || config.breadth) * s;
+
+                const stepsTotal = element.steps || Math.round((l + b) / s) || config.steps;
+                const stepsFirstRun = Math.round((l / (l + b - w)) * stepsTotal);
+                const stepsSecondRun = stepsTotal - stepsFirstRun;
+
+                ctx.beginPath();
+                ctx.moveTo(-w / 2, l / 2);
+                ctx.lineTo(-w / 2, -l / 2);
+                ctx.lineTo(b / 2, -l / 2);
+                ctx.lineTo(b / 2, -l / 2 + w);
+                ctx.lineTo(-w / 2 + w, -l / 2 + w);
+                ctx.lineTo(-w / 2 + w, l / 2);
+                ctx.closePath();
+                ctx.stroke();
+
+                // Steps for the first run
+                for (let i = 1; i <= stepsFirstRun; i++) {
+                    const stepY = l / 2 - (l / stepsFirstRun) * i;
+                    ctx.beginPath();
+                    ctx.moveTo(-w / 2, stepY);
+                    ctx.lineTo(-w / 2 + w, stepY);
+                    ctx.stroke();
+                }
+                // Steps for the second run
+                for (let i = 1; i < stepsSecondRun; i++) {
+                    const stepX = -w / 2 + w + ((b - w) / stepsSecondRun) * i;
+                    ctx.beginPath();
+                    ctx.moveTo(stepX, -l / 2);
+                    ctx.lineTo(stepX, -l / 2 + w);
+                    ctx.stroke();
+                }
+
+            } else if (config.stairType === 'spiral') {
+                const r = (element.radius || config.radius) * s;
+                // Outer circle
+                ctx.beginPath();
+                ctx.arc(0, 0, r, 0, Math.PI * 2);
+                ctx.stroke();
+                // Inner pole
+                ctx.beginPath();
+                ctx.arc(0, 0, r * 0.2, 0, Math.PI * 2);
+                ctx.stroke();
+
+                for (let i = 0; i < config.steps; i++) {
+                    const ang = (Math.PI * 2 / config.steps) * i;
+                    ctx.beginPath();
+                    ctx.moveTo(Math.cos(ang) * r * 0.2, Math.sin(ang) * r * 0.2);
+                    ctx.lineTo(Math.cos(ang) * r, Math.sin(ang) * r);
+                    ctx.stroke();
+                }
+            }
+            ctx.restore();
         }
 
         function drawAllRooms() {
@@ -2957,6 +3271,299 @@
             link.href = URL.createObjectURL(new Blob([dataStr], { type: 'application/json' }));
             link.click();
             showToast('✓', 'Project saved successfully!');
+        }
+
+        // --- 3D VIEW LOGIC ---
+        let is3DMode = false;
+        let scene3D, camera3D, renderer3D, controls3D;
+
+        function toggle3DView() {
+            if (!project.homeWall) {
+                showToast('⚠️', 'Please create a project first!');
+                return;
+            }
+
+            is3DMode = !is3DMode;
+            const btnText = document.getElementById('viewToggleText');
+            const canvasEl = document.getElementById('designCanvas');
+            const container = document.getElementById('threeContainer');
+            const sidebar = document.getElementById('sidebarLeft');
+
+            if (is3DMode) {
+                btnText.textContent = '2D View';
+                canvasEl.style.display = 'none';
+                container.style.display = 'block';
+                // Deactivate tools
+                document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
+                sidebar.style.pointerEvents = 'none';
+                sidebar.style.opacity = '0.5';
+
+                init3D();
+                showToast('🏠', 'Interactive 3D View Active');
+            } else {
+                btnText.textContent = '3D View';
+                canvasEl.style.display = 'block';
+                container.style.display = 'none';
+                sidebar.style.pointerEvents = 'auto';
+                sidebar.style.opacity = '1';
+                // Reactivate select tool
+                selectTool('select');
+
+                if (renderer3D) {
+                    renderer3D.setAnimationLoop(null);
+                    container.innerHTML = '';
+                    renderer3D.dispose();
+                }
+            }
+        }
+
+        function init3D() {
+            const container = document.getElementById('threeContainer');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+
+            // Scene setup
+            scene3D = new THREE.Scene();
+            scene3D.background = new THREE.Color(0xf8fafc); // Slate-50
+
+            // Camera
+            camera3D = new THREE.PerspectiveCamera(45, width / height, 0.1, 10000);
+            camera3D.position.set(200, 400, 600);
+
+            // Renderer
+            renderer3D = new THREE.WebGLRenderer({ antialias: true });
+            renderer3D.setSize(width, height);
+            renderer3D.shadowMap.enabled = true;
+            renderer3D.shadowMap.type = THREE.PCFSoftShadowMap;
+            container.appendChild(renderer3D.domElement);
+
+            // Controls
+            controls3D = new THREE.OrbitControls(camera3D, renderer3D.domElement);
+            controls3D.enableDamping = true;
+            controls3D.dampingFactor = 0.05;
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+            scene3D.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
+            directionalLight.position.set(300, 800, 400);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 2048;
+            directionalLight.shadow.mapSize.height = 2048;
+            scene3D.add(directionalLight);
+
+            // Build Floor Plan
+            const homeW = project.totalLength;
+            const homeH = project.totalBreadth;
+            const unit = 15; // 1 foot = 15 units in 3D (matches 2D SCALE for consistency)
+
+            const totalW3d = homeW * unit;
+            const totalH3d = homeH * unit;
+
+            // Main Floor
+            const floorGeo = new THREE.PlaneGeometry(totalW3d + 40, totalH3d + 40);
+            const floorMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+            const floor = new THREE.Mesh(floorGeo, floorMat);
+            floor.rotation.x = -Math.PI / 2;
+            floor.receiveShadow = true;
+            scene3D.add(floor);
+
+            // Boundary Outline (Visual Guide)
+            const grid = new THREE.GridHelper(Math.max(totalW3d, totalH3d) + 100, 20, 0xcbd5e1, 0xe2e8f0);
+            scene3D.add(grid);
+
+            // Coordinate mapping (pixels to 3D units)
+            // (px - project.homeWall.x) / (project.homeWall.width / totalW3d) -> centered
+            const pxTo3d = (px, py) => {
+                const x = (px - project.homeWall.x) / project.homeWall.width * totalW3d - totalW3d / 2;
+                const z = (py - project.homeWall.y) / project.homeWall.height * totalH3d - totalH3d / 2;
+                return { x, z };
+            };
+
+            // Outer Frame
+            create3DWall(-totalW3d / 2, -totalH3d / 2, totalW3d / 2, -totalH3d / 2, 10 * unit, 4, 0x1e293b); // North
+            create3DWall(-totalW3d / 2, totalH3d / 2, totalW3d / 2, totalH3d / 2, 10 * unit, 4, 0x1e293b); // South
+            create3DWall(-totalW3d / 2, -totalH3d / 2, -totalW3d / 2, totalH3d / 2, 10 * unit, 4, 0x1e293b); // West
+            create3DWall(totalW3d / 2, -totalH3d / 2, totalW3d / 2, totalH3d / 2, 10 * unit, 4, 0x1e293b); // East
+
+            // Rooms Floors
+            project.rooms.forEach(room => {
+                const start = pxTo3d(room.x, room.y);
+                const rW3d = room.length * unit;
+                const rH3d = room.breadth * unit;
+
+                const rGeo = new THREE.PlaneGeometry(rW3d, rH3d);
+                const rMat = new THREE.MeshStandardMaterial({ color: room.color, transparent: true, opacity: 0.4 });
+                const rMesh = new THREE.Mesh(rGeo, rMat);
+                rMesh.rotation.x = -Math.PI / 2;
+                rMesh.position.set(start.x + rW3d / 2, 0.5, start.z + rH3d / 2);
+                rMesh.receiveShadow = true;
+                scene3D.add(rMesh);
+
+                const sprite = createEmojiSprite(room.icon || '🏠', 40);
+                sprite.position.set(start.x + rW3d / 2, 60, start.z + rH3d / 2);
+                scene3D.add(sprite);
+            });
+
+            // Internal Elements
+            elements.forEach(el => {
+                if (el.type === 'wall' || el.type === 'door' || el.type === 'window') {
+                    const p1 = pxTo3d(el.x1, el.y1);
+                    const p2 = pxTo3d(el.x2, el.y2);
+                    const thick = (el.thickness || 8) * (unit / 15);
+
+                    if (el.type === 'wall') {
+                        create3DWall(p1.x, p1.z, p2.x, p2.z, 10 * unit, thick, el.color || 0x475569);
+                    } else if (el.type === 'door') {
+                        create3DWall(p1.x, p1.z, p2.x, p2.z, 7 * unit, thick, 0x78350f); // Brown wood
+                    } else if (el.type === 'window') {
+                        // Create window as semi-transparent glass
+                        const win = create3DWall(p1.x, p1.z, p2.x, p2.z, 5 * unit, thick + 1, 0xbae6fd); // Sky blue
+                        win.material.transparent = true;
+                        win.material.opacity = 0.6;
+                        win.position.y = 5.5 * unit;
+                    }
+                } else if (el.type === 'symbol') {
+                    const center = pxTo3d(el.x, el.y);
+                    const config = symbols[el.symbolType];
+
+                    if (config?.isStair) {
+                        create3DStairs(center, el, config, unit);
+                    } else {
+                        const scale = (el.scale || 1) * 35;
+                        const sprite = createEmojiSprite(config?.emoji || '🪑', scale);
+                        sprite.position.set(center.x, 20, center.z);
+                        scene3D.add(sprite);
+                    }
+                }
+            });
+
+            animate3D();
+        }
+
+        function create3DWall(x1, z1, x2, z2, height, thickness, color) {
+            const dx = x2 - x1;
+            const dz = z2 - z1;
+            const length = Math.sqrt(dx * dx + dz * dz);
+            const angle = Math.atan2(dz, dx);
+
+            const geo = new THREE.BoxGeometry(length, height, thickness);
+            const mat = new THREE.MeshStandardMaterial({ color: color });
+            const wall = new THREE.Mesh(geo, mat);
+
+            wall.position.set(x1 + dx / 2, height / 2, z1 + dz / 2);
+            wall.rotation.y = -angle;
+            wall.castShadow = true;
+            wall.receiveShadow = true;
+            scene3D.add(wall);
+            return wall;
+        }
+
+        function create3DStairs(center, element, config, unit) {
+            const rot = (element.rotation || 0) * Math.PI / 180;
+            const group = new THREE.Group();
+            group.position.set(center.x, 0, center.z);
+            group.rotateY(-rot);
+            scene3D.add(group);
+
+            const s = unit;
+            const mat = new THREE.MeshStandardMaterial({ color: 0xcbd5e1 }); // Slate-300
+
+            if (config.stairType === 'straight') {
+                const w = (element.width || config.width) * s;
+                const l = (element.length || config.length) * s;
+                const steps = element.steps || config.steps;
+                const totalHeight = 10 * s;
+
+                for (let i = 0; i < steps; i++) {
+                    const stepH = (totalHeight / steps) * (i + 1);
+                    const stepL = l / steps;
+                    const stepGeo = new THREE.BoxGeometry(w, stepH, stepL);
+                    const step = new THREE.Mesh(stepGeo, mat);
+                    step.position.set(0, stepH / 2, -l / 2 + stepL / 2 + (i * stepL));
+                    step.castShadow = true;
+                    step.receiveShadow = true;
+                    group.add(step);
+                }
+            } else if (config.stairType === 'lshape') {
+                const w = (element.width || config.width) * s;
+                const l = (element.length || config.length) * s;
+                const b = (element.breadth || config.breadth) * s;
+                const steps = element.steps || config.steps;
+                const totalHeight = 10 * s;
+
+                const steps1 = Math.floor(steps / 2);
+                for (let i = 0; i < steps1; i++) {
+                    const stepH = (totalHeight / steps) * (i + 1);
+                    const stepL = l / steps1;
+                    const stepGeo = new THREE.BoxGeometry(w, stepH, stepL);
+                    const step = new THREE.Mesh(stepGeo, mat);
+                    step.position.set(0, stepH / 2, l / 2 - stepL / 2 - (i * stepL));
+                    step.castShadow = true;
+                    group.add(step);
+                }
+                const steps2 = steps - steps1;
+                for (let i = 0; i < steps2; i++) {
+                    const stepH = (totalHeight / steps) * (steps1 + i + 1);
+                    const stepW = (b - w) / steps2;
+                    const stepGeo = new THREE.BoxGeometry(stepW, stepH, w);
+                    const step = new THREE.Mesh(stepGeo, mat);
+                    step.position.set(-w / 2 + w + stepW / 2 + (i * stepW), stepH / 2, -l / 2 + w / 2);
+                    step.castShadow = true;
+                    group.add(step);
+                }
+            } else if (config.stairType === 'spiral') {
+                const r = (element.radius || config.radius) * s;
+                const steps = config.steps || 12;
+                const totalHeight = 10 * s;
+
+                const poleGeo = new THREE.CylinderGeometry(r * 0.1, r * 0.1, totalHeight, 16);
+                const pole = new THREE.Mesh(poleGeo, mat);
+                pole.position.y = totalHeight / 2;
+                group.add(pole);
+
+                for (let i = 0; i < steps; i++) {
+                    const ang = (Math.PI * 2 / steps) * i;
+                    const h = (totalHeight / steps) * (i + 1);
+                    const stepGeo = new THREE.BoxGeometry(r, s * 0.5, r * 0.3);
+                    const step = new THREE.Mesh(stepGeo, mat);
+                    step.position.set(Math.cos(ang) * r / 2, h, Math.sin(ang) * r / 2);
+                    step.rotation.y = -ang;
+                    step.castShadow = true;
+                    group.add(step);
+                }
+            }
+        }
+
+        function createEmojiSprite(emoji, size) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128;
+            canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            ctx.font = '80px DM Sans, Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.shadowColor = 'rgba(0,0,0,0.5)';
+            ctx.shadowBlur = 10;
+            ctx.fillText(emoji, 64, 64);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            const mat = new THREE.SpriteMaterial({ map: texture, transparent: true });
+            const sprite = new THREE.Sprite(mat);
+            sprite.scale.set(size, size, 1);
+            return sprite;
+        }
+
+        function animate3D() {
+            if (!is3DMode) return;
+            function loop() {
+                if (!is3DMode) return;
+                requestAnimationFrame(loop);
+                controls3D.update();
+                renderer3D.render(scene3D, camera3D);
+            }
+            loop();
         }
 
         function showToast(icon, message) {
