@@ -1196,6 +1196,14 @@
                     <div class="property-group">
                         <div class="property-title">Window Settings</div>
                         <div class="property-row">
+                            <label class="property-label"
+                                style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <input type="checkbox" id="toggleWindowLabels" checked
+                                    onchange="showWindowLabels = this.checked; redrawAll();">
+                                Show Dimensions
+                            </label>
+                        </div>
+                        <div class="property-row">
                             <label class="property-label">Type</label>
                             <select class="property-input" id="windowType">
                                 <option value="standard">Standard</option>
@@ -1405,6 +1413,12 @@
         let lastTouchX = 0;
         let lastTouchY = 0;
         let isPanning = false;
+        let showWindowLabels = true;
+        let selectedElement = null;
+        let selectedRoom = null;
+        let dragOffsetX = 0;
+        let dragOffsetY = 0;
+        let isMovingElement = false;
 
         // History Stacks
         let undoStack = [];
@@ -1618,6 +1632,25 @@
             if (e.ctrlKey && e.key.toLowerCase() === 'y') {
                 e.preventDefault();
                 redo();
+            }
+
+            // Delete selected element
+            if (e.key === 'Delete' || e.key === 'Backspace') {
+                if (selectedElement) {
+                    saveState();
+                    elements = elements.filter(el => el !== selectedElement);
+                    selectedElement = null;
+                    updateLayerCounts();
+                    redrawAll();
+                    showToast('🗑️', 'Element deleted');
+                } else if (selectedRoom) {
+                    saveState();
+                    project.rooms = project.rooms.filter(r => r !== selectedRoom);
+                    selectedRoom = null;
+                    updateLayerCounts();
+                    redrawAll();
+                    showToast('🗑️', 'Room deleted');
+                }
             }
         }
 
@@ -1942,6 +1975,37 @@
             const pos = getMousePos(e);
             startX = snapToGrid(pos.x);
             startY = snapToGrid(pos.y);
+
+            if (currentTool === 'select') {
+                const target = findTarget(pos.x, pos.y);
+                if (target) {
+                    if (target.type === 'room') {
+                        selectedRoom = target.data;
+                        selectedElement = null;
+                        dragOffsetX = pos.x - selectedRoom.x;
+                        dragOffsetY = pos.y - selectedRoom.y;
+                    } else {
+                        selectedElement = target.data;
+                        selectedRoom = null;
+                        if (selectedElement.type === 'text' || selectedElement.type === 'symbol') {
+                            dragOffsetX = pos.x - selectedElement.x;
+                            dragOffsetY = pos.y - selectedElement.y;
+                        } else {
+                            // For lines (wall, door, window), we use first point as reference
+                            dragOffsetX = pos.x - selectedElement.x1;
+                            dragOffsetY = pos.y - selectedElement.y1;
+                        }
+                    }
+                    isMovingElement = true;
+                    saveState();
+                } else {
+                    selectedElement = null;
+                    selectedRoom = null;
+                }
+                redrawAll();
+                return;
+            }
+
             isDrawing = true;
 
             if (currentTool === 'text') {
@@ -1950,10 +2014,68 @@
             }
         }
 
+        function findTarget(x, y) {
+            // Check rooms first (top layer)
+            for (let i = project.rooms.length - 1; i >= 0; i--) {
+                const r = project.rooms[i];
+                if (x >= r.x && x <= r.x + r.width && y >= r.y && y <= r.y + r.height) {
+                    return { type: 'room', data: r };
+                }
+            }
+
+            // Check elements
+            for (let i = elements.length - 1; i >= 0; i--) {
+                const el = elements[i];
+                if (el.type === 'text' || el.type === 'symbol') {
+                    const size = 30; // Hit area
+                    if (Math.abs(x - el.x) < size && Math.abs(y - el.y) < size) {
+                        return { type: 'element', data: el };
+                    }
+                } else {
+                    // Line hit test
+                    if (isPointNearLine(x, y, el.x1, el.y1, el.x2, el.y2, 10)) {
+                        return { type: 'element', data: el };
+                    }
+                }
+            }
+            return null;
+        }
+
+        function isPointNearLine(px, py, x1, y1, x2, y2, tolerance) {
+            const l2 = Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2);
+            if (l2 === 0) return Math.sqrt(Math.pow(px - x1, 2) + Math.pow(py - y1, 2)) < tolerance;
+            let t = ((px - x1) * (x2 - x1) + (py - y1) * (y2 - y1)) / l2;
+            t = Math.max(0, Math.min(1, t));
+            const dist = Math.sqrt(Math.pow(px - (x1 + t * (x2 - x1)), 2) + Math.pow(py - (y1 + t * (y2 - y1)), 2));
+            return dist < tolerance;
+        }
+
         function handleMouseMove(e) {
             const pos = getMousePos(e);
             const currentX = pos.x;
             const currentY = pos.y;
+
+            if (isMovingElement) {
+                if (selectedRoom) {
+                    selectedRoom.x = snapToGrid(currentX - dragOffsetX);
+                    selectedRoom.y = snapToGrid(currentY - dragOffsetY);
+                } else if (selectedElement) {
+                    if (selectedElement.type === 'text' || selectedElement.type === 'symbol') {
+                        selectedElement.x = snapToGrid(currentX - dragOffsetX);
+                        selectedElement.y = snapToGrid(currentY - dragOffsetY);
+                    } else {
+                        const dx = snapToGrid(currentX - dragOffsetX) - selectedElement.x1;
+                        const dy = snapToGrid(currentY - dragOffsetY) - selectedElement.y1;
+                        selectedElement.x1 += dx;
+                        selectedElement.y1 += dy;
+                        selectedElement.x2 += dx;
+                        selectedElement.y2 += dy;
+                    }
+                }
+                updateDimensionDisplay();
+                redrawAll();
+                return;
+            }
 
             if (isDrawing && !placingRoom) {
                 redrawAll();
@@ -1962,6 +2084,12 @@
         }
 
         function handleMouseUp(e) {
+            if (isMovingElement) {
+                isMovingElement = false;
+                redrawAll();
+                return;
+            }
+
             if (!isDrawing || placingRoom) return;
 
             const pos = getMousePos(e);
@@ -2121,6 +2249,23 @@
         function drawElement(element) {
             ctx.save();
 
+            // Highlight if selected
+            if (element === selectedElement) {
+                ctx.save();
+                ctx.setLineDash([5, 5]);
+                ctx.strokeStyle = '#ef4444';
+                ctx.lineWidth = 2;
+                if (element.type === 'text' || element.type === 'symbol') {
+                    ctx.strokeRect(element.x - 20, element.y - 20, 40, 40);
+                } else {
+                    ctx.beginPath();
+                    ctx.moveTo(element.x1, element.y1);
+                    ctx.lineTo(element.x2, element.y2);
+                    ctx.stroke();
+                }
+                ctx.restore();
+            }
+
             switch (element.type) {
                 case 'wall':
                     ctx.strokeStyle = element.color;
@@ -2155,84 +2300,176 @@
         }
 
         function drawWallDimension(x1, y1, x2, y2, color) {
-            ctx.save();
             const distance = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
             const lengthFt = (distance / SCALE).toFixed(1);
             const midX = (x1 + x2) / 2;
             const midY = (y1 + y2) / 2;
             const angle = Math.atan2(y2 - y1, x2 - x1);
-            const offsetDistance = 20;
-            const offsetX = Math.sin(angle) * offsetDistance;
-            const offsetY = -Math.cos(angle) * offsetDistance;
-            const textX = midX + offsetX;
-            const textY = midY + offsetY;
+
+            ctx.save();
+            ctx.translate(midX, midY);
+
+            // Keep text readable (not upside down)
+            let textAngle = angle;
+            if (textAngle > Math.PI / 2 || textAngle < -Math.PI / 2) {
+                textAngle += Math.PI;
+            }
+            ctx.rotate(textAngle);
+
+            // Offset text away from the wall line
+            const offset = -20;
+            ctx.translate(0, offset);
 
             ctx.font = 'bold 12px DM Sans';
-            const textWidth = ctx.measureText(`${lengthFt} ft`).width;
+            const text = `${lengthFt} ft`;
+            const tw = ctx.measureText(text).width;
             const padding = 6;
 
+            // Background Mask
             ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-            ctx.fillRect(textX - textWidth / 2 - padding, textY - 10, textWidth + padding * 2, 20);
+            ctx.fillRect(-tw / 2 - padding, -10, tw + padding * 2, 20);
+
+            // Border
             ctx.strokeStyle = color;
             ctx.lineWidth = 1.5;
-            ctx.strokeRect(textX - textWidth / 2 - padding, textY - 10, textWidth + padding * 2, 20);
+            ctx.strokeRect(-tw / 2 - padding, -10, tw + padding * 2, 20);
 
+            // Text
             ctx.fillStyle = color;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText(`${lengthFt} ft`, textX, textY);
+            ctx.fillText(text, 0, 0);
+
             ctx.restore();
         }
 
         function drawDoor(x1, y1, x2, y2, preview) {
-            const width = Math.abs(x2 - x1);
-            const height = Math.abs(y2 - y1);
-            const minX = Math.min(x1, x2);
-            const minY = Math.min(y1, y2);
+            const distance = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+            const angle = Math.atan2(y2 - y1, x2 - x1);
+            const thickness = parseInt(document.getElementById('wallThickness').value);
 
-            ctx.fillStyle = preview ? 'rgba(139, 69, 19, 0.5)' : '#8B4513';
-            ctx.fillRect(minX, minY, width, height);
-            ctx.strokeStyle = preview ? 'rgba(101, 67, 33, 0.7)' : '#654321';
+            ctx.save();
+            ctx.translate(x1, y1);
+            ctx.rotate(angle);
+
+            // 1. Clear wall area (The Opening)
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, -thickness / 2, distance, thickness);
+
+            // 2. Door Frame / Hinge Point
+            ctx.strokeStyle = '#1e293b';
             ctx.lineWidth = 2;
-            ctx.strokeRect(minX, minY, width, height);
-
-            ctx.strokeStyle = preview ? 'rgba(101, 67, 33, 0.5)' : '#654321';
             ctx.beginPath();
-            if (width > height) {
-                ctx.arc(minX, minY, width, 0, Math.PI / 2);
-            } else {
-                ctx.arc(minX, minY, height, 0, Math.PI / 2);
-            }
+            ctx.moveTo(0, -thickness / 2);
+            ctx.lineTo(0, thickness / 2);
             ctx.stroke();
 
+            // 3. The Door Panel (Open at 90 degrees)
+            ctx.beginPath();
+            ctx.lineWidth = 2;
+            ctx.moveTo(0, 0);
+            ctx.lineTo(0, -distance); // Perpendicular to wall
+            ctx.stroke();
+
+            // 4. Swing Arc (Solid line as per image)
+            ctx.beginPath();
+            ctx.lineWidth = 1;
+            ctx.arc(0, 0, distance, 0, -Math.PI / 2, true);
+            ctx.stroke();
+
+            ctx.restore();
+
             if (!preview) {
-                drawRectangleDimensions(minX, minY, width, height, '#8B4513');
+                const lengthFt = (distance / SCALE).toFixed(1);
+                const midX = (x1 + x2) / 2;
+                const midY = (y1 + y2) / 2;
+
+                ctx.save();
+                ctx.translate(midX, midY);
+
+                let textAngle = angle;
+                if (textAngle > Math.PI / 2 || textAngle < -Math.PI / 2) {
+                    textAngle += Math.PI;
+                }
+                ctx.rotate(textAngle);
+
+                ctx.font = 'bold 11px DM Sans';
+                ctx.fillStyle = '#1e293b';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+
+                // Draw background
+                const text = `D: ${lengthFt}'`;
+                const tw = ctx.measureText(text).width;
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+                ctx.fillRect(-tw / 2 - 4, -25, tw + 8, 20);
+
+                ctx.fillStyle = '#1e293b';
+                ctx.fillText(text, 0, -15);
+                ctx.restore();
             }
         }
 
         function drawWindow(x1, y1, x2, y2, preview) {
-            const width = Math.abs(x2 - x1);
-            const height = Math.abs(y2 - y1);
-            const minX = Math.min(x1, x2);
-            const minY = Math.min(y1, y2);
+            const distance = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+            const angle = Math.atan2(y2 - y1, x2 - x1);
+            const thickness = parseInt(document.getElementById('wallThickness').value);
 
-            ctx.fillStyle = preview ? 'rgba(173, 216, 230, 0.5)' : '#ADD8E6';
-            ctx.fillRect(minX, minY, width, height);
-            ctx.strokeStyle = preview ? 'rgba(70, 130, 180, 0.7)' : '#4682B4';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(minX, minY, width, height);
+            ctx.save();
+            ctx.translate(x1, y1);
+            ctx.rotate(angle);
 
-            const midX = minX + width / 2;
-            const midY = minY + height / 2;
+            // Fill background white to clear the wall
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, -thickness / 2, distance, thickness);
+
+            // Draw window frame
+            ctx.strokeStyle = '#1e293b';
+            ctx.lineWidth = 1.5;
+            ctx.strokeRect(0, -thickness / 2, distance, thickness);
+
+            // Draw double lines inside (Architectural Window Style)
             ctx.beginPath();
-            ctx.moveTo(midX, minY);
-            ctx.lineTo(midX, minY + height);
-            ctx.moveTo(minX, midY);
-            ctx.lineTo(minX + width, midY);
+            ctx.lineWidth = 1;
+            ctx.moveTo(0, -thickness / 6);
+            ctx.lineTo(distance, -thickness / 6);
+            ctx.moveTo(0, thickness / 6);
+            ctx.lineTo(distance, thickness / 6);
             ctx.stroke();
 
-            if (!preview) {
-                drawRectangleDimensions(minX, minY, width, height, '#4682B4');
+            ctx.restore();
+
+            if (!preview && showWindowLabels) {
+                // Calculate dimensions for display
+                const lengthFt = (distance / SCALE).toFixed(1);
+                const midX = (x1 + x2) / 2;
+                const midY = (y1 + y2) / 2;
+
+                ctx.save();
+                ctx.translate(midX, midY);
+
+                // Align text with window angle
+                let textAngle = angle;
+                // Keep text readable (prevent upside down)
+                if (textAngle > Math.PI / 2 || textAngle < -Math.PI / 2) {
+                    textAngle += Math.PI;
+                }
+                ctx.rotate(textAngle);
+
+                ctx.font = 'bold 11px DM Sans';
+                ctx.fillStyle = '#1e293b';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+
+                // Draw background for text
+                const text = `W: ${lengthFt}'`;
+                const tw = ctx.measureText(text).width;
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+                ctx.fillRect(-tw / 2 - 4, -10, tw + 8, 20);
+
+                ctx.fillStyle = '#1e293b';
+                ctx.fillText(text, 0, 0);
+                ctx.restore();
             }
         }
 
@@ -2299,8 +2536,14 @@
                 ctx.fillStyle = room.color + '30';
                 ctx.fillRect(room.x, room.y, room.width, room.height);
                 ctx.strokeStyle = room.color;
-                ctx.lineWidth = 4;
+                ctx.lineWidth = (room === selectedRoom) ? 6 : 4;
+                if (room === selectedRoom) {
+                    ctx.setLineDash([5, 5]);
+                    ctx.strokeStyle = '#ef4444';
+                }
                 ctx.strokeRect(room.x, room.y, room.width, room.height);
+                ctx.setLineDash([]); // Reset dash
+
                 ctx.font = '32px Arial';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
