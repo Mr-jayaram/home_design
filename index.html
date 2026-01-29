@@ -1,11 +1,13 @@
-
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Professional Floor Plan Designer</title>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Playfair+Display:wght@700&display=swap"
+        rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -52,7 +54,7 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
             z-index: 1001;
         }
 
@@ -240,8 +242,15 @@
         }
 
         @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.8; }
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.8;
+            }
         }
 
         .room-icon {
@@ -368,7 +377,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            background: 
+            background:
                 radial-gradient(circle at 20% 30%, rgba(37, 99, 235, 0.05) 0%, transparent 50%),
                 radial-gradient(circle at 80% 70%, rgba(124, 58, 237, 0.05) 0%, transparent 50%),
                 var(--bg-main);
@@ -377,11 +386,19 @@
         #designCanvas {
             background: white;
             border-radius: 4px;
-            box-shadow: 
+            box-shadow:
                 0 0 0 1px var(--border),
-                0 20px 40px rgba(0,0,0,0.4);
+                0 20px 40px rgba(0, 0, 0, 0.4);
             cursor: crosshair;
-            max-width: none; /* Keep canvas original size on scroll */
+            max-width: none;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-origin: center center;
+        }
+
+        #zoomRange {
+            width: 100px;
+            cursor: pointer;
+            accent-color: var(--primary);
         }
 
         /* Right Sidebar */
@@ -510,6 +527,7 @@
                 opacity: 0;
                 transform: translateY(-30px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -620,45 +638,41 @@
             background: var(--border);
         }
 
-        /* Dimension Display Bar */
-        .dimension-bar {
-            background: var(--bg-panel);
-            border-top: 1px solid var(--border);
-            padding: 16px 20px;
+        /* Dimension Grid in Sidebar */
+        .dimension-grid {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 20px;
-            transition: all 0.3s ease;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
         }
 
         .dimension-item {
             background: var(--bg-card);
             border: 1px solid var(--border);
             border-radius: 8px;
-            padding: 12px 16px;
+            padding: 10px;
             display: flex;
             flex-direction: column;
         }
 
         .dimension-label {
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             color: var(--text-secondary);
-            margin-bottom: 6px;
+            margin-bottom: 4px;
         }
 
         .dimension-value {
-            font-size: 20px;
+            font-size: 16px;
             font-weight: 700;
             color: var(--text-primary);
         }
 
         .dimension-unit {
-            font-size: 12px;
+            font-size: 10px;
             color: var(--text-secondary);
-            margin-left: 4px;
+            margin-left: 2px;
         }
 
         .dimension-item.balance {
@@ -762,6 +776,7 @@
                 opacity: 0;
                 transform: translateX(100px);
             }
+
             to {
                 opacity: 1;
                 transform: translateX(0);
@@ -799,9 +814,10 @@
                 font-size: 16px;
             }
 
-            .header-actions .btn span + span, 
+            .header-actions .btn span+span,
             .header-actions .btn:not(.btn-icon) span:not(:first-child) {
-                display: none; /* Hide text on small buttons */
+                display: none;
+                /* Hide text on small buttons */
             }
 
             /* Move Sidebars to Slide-in Menus */
@@ -810,7 +826,7 @@
                 left: -280px;
                 top: 60px;
                 height: calc(100vh - 60px);
-                box-shadow: 10px 0 15px rgba(0,0,0,0.3);
+                box-shadow: 10px 0 15px rgba(0, 0, 0, 0.3);
             }
 
             .sidebar-left.mobile-active {
@@ -818,7 +834,8 @@
             }
 
             .sidebar-right {
-                display: none; /* Combine with left sidebar on mobile */
+                display: none;
+                /* Combine with left sidebar on mobile */
             }
 
             /* If the left sidebar is open, show property panel at bottom of it */
@@ -854,7 +871,7 @@
                 left: 0;
                 right: 0;
                 bottom: 0;
-                background: rgba(0,0,0,0.5);
+                background: rgba(0, 0, 0, 0.5);
                 z-index: 999;
             }
 
@@ -868,12 +885,16 @@
                 width: 32px;
                 height: 32px;
             }
+
             .logo {
-                gap: 6px;
+                display: none;
+
             }
+
             .logo span {
                 display: none;
             }
+
             .dimension-bar {
                 /* grid-template-columns: 1fr; */
                 display: flex;
@@ -881,6 +902,7 @@
         }
     </style>
 </head>
+
 <body>
     <!-- Mobile Sidebar Overlay -->
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleMobileMenu()"></div>
@@ -895,7 +917,7 @@
                     <span>FloorPlan Pro</span>
                 </div>
             </div>
-            
+
             <div class="header-actions">
                 <button class="btn btn-primary" onclick="openProjectModal()">
                     <span>📄</span> <span>New Project</span>
@@ -960,7 +982,7 @@
                     <div class="sidebar-title">
                         <span>🏠</span> Rooms
                     </div>
-                    
+
                     <div class="room-item" onclick="selectRoom('bedroom')" id="room-bedroom">
                         <span class="room-icon">🛏️</span>
                         <div class="room-info">
@@ -1079,7 +1101,8 @@
                         <div class="welcome-icon">🏗️</div>
                         <h1 class="welcome-title">Start Your Design</h1>
                         <p class="welcome-subtitle">Create a new project to begin designing your floor plan</p>
-                        <button class="btn btn-primary" style="font-size: 16px; padding: 14px 28px;" onclick="openProjectModal()">
+                        <button class="btn btn-primary" style="font-size: 16px; padding: 14px 28px;"
+                            onclick="openProjectModal()">
                             <span>📄</span> Create New Project
                         </button>
                     </div>
@@ -1088,12 +1111,13 @@
                 <!-- Canvas Toolbar -->
                 <div class="canvas-toolbar">
                     <div class="toolbar-group">
-                        <span class="toolbar-label">Scale:</span>
-                        <select class="select-input" id="scaleSelect" onchange="updateScale()">
-                            <option value="10">1:10</option>
-                            <option value="15" selected>1:15</option>
-                            <option value="20">1:20</option>
-                        </select>
+                        <span class="toolbar-label">Zoom:</span>
+                        <input type="range" id="zoomRange" min="5" max="30" value="15" oninput="updateScale()">
+                    </div>
+                    <div class="toolbar-group">
+                        <button class="btn btn-secondary btn-icon" onclick="toggleRotation()" title="Rotate View">
+                            <span>🔄</span>
+                        </button>
                     </div>
                     <div class="toolbar-group">
                         <span class="toolbar-label">Grid:</span>
@@ -1130,11 +1154,13 @@
                         <div class="property-title">Wall Settings</div>
                         <div class="property-row">
                             <label class="property-label">Thickness</label>
-                            <input type="number" class="property-input" id="wallThickness" value="6" min="2" max="24" onchange="redrawAll()">
+                            <input type="number" class="property-input" id="wallThickness" value="6" min="2" max="24"
+                                onchange="redrawAll()">
                         </div>
                         <div class="property-row">
                             <label class="property-label">Color</label>
-                            <input type="color" class="property-input" id="wallColor" value="#1e293b" onchange="redrawAll()">
+                            <input type="color" class="property-input" id="wallColor" value="#1e293b"
+                                onchange="redrawAll()">
                         </div>
                     </div>
 
@@ -1202,40 +1228,46 @@
                         <span class="layer-count" id="furnitureCount">0</span>
                     </div>
                 </div>
+
+                <!-- Project Stats (Moved from footer) -->
+                <div class="sidebar-section">
+                    <div class="sidebar-title">
+                        <span>📊</span> Project Stats
+                    </div>
+                    <div class="dimension-grid">
+                        <div class="dimension-item">
+                            <div class="dimension-label">Total Length</div>
+                            <div class="dimension-value">
+                                <span id="totalLength">0</span>
+                                <span class="dimension-unit">ft</span>
+                            </div>
+                        </div>
+                        <div class="dimension-item">
+                            <div class="dimension-label">Total Breadth</div>
+                            <div class="dimension-value">
+                                <span id="totalBreadth">0</span>
+                                <span class="dimension-unit">ft</span>
+                            </div>
+                        </div>
+                        <div class="dimension-item balance">
+                            <div class="dimension-label">Bal. Length</div>
+                            <div class="dimension-value">
+                                <span id="balanceLength">0</span>
+                                <span class="dimension-unit">ft</span>
+                            </div>
+                        </div>
+                        <div class="dimension-item balance">
+                            <div class="dimension-label">Bal. Breadth</div>
+                            <div class="dimension-value">
+                                <span id="balanceBreadth">0</span>
+                                <span class="dimension-unit">ft</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </aside>
         </div>
 
-        <!-- Dimension Display Bar -->
-        <div class="dimension-bar">
-            <div class="dimension-item">
-                <div class="dimension-label">Total Length</div>
-                <div class="dimension-value">
-                    <span id="totalLength">0</span>
-                    <span class="dimension-unit">ft</span>
-                </div>
-            </div>
-            <div class="dimension-item">
-                <div class="dimension-label">Total Breadth</div>
-                <div class="dimension-value">
-                    <span id="totalBreadth">0</span>
-                    <span class="dimension-unit">ft</span>
-                </div>
-            </div>
-            <div class="dimension-item balance">
-                <div class="dimension-label">Balance Length</div>
-                <div class="dimension-value">
-                    <span id="balanceLength">0</span>
-                    <span class="dimension-unit">ft</span>
-                </div>
-            </div>
-            <div class="dimension-item balance">
-                <div class="dimension-label">Balance Breadth</div>
-                <div class="dimension-value">
-                    <span id="balanceBreadth">0</span>
-                    <span class="dimension-unit">ft</span>
-                </div>
-            </div>
-        </div>
     </div>
 
     <!-- Project Setup Modal -->
@@ -1250,7 +1282,8 @@
             <div class="modal-body">
                 <div class="form-group">
                     <label class="form-label">Project Name</label>
-                    <input type="text" class="form-input" id="projectNameInput" placeholder="My Dream Home" value="My Dream Home">
+                    <input type="text" class="form-input" id="projectNameInput" placeholder="My Dream Home"
+                        value="My Dream Home">
                 </div>
                 <div class="form-group">
                     <label class="form-label">Home Type</label>
@@ -1267,11 +1300,13 @@
                     <div class="input-group">
                         <div>
                             <label class="form-label" style="margin-bottom: 6px;">Length (feet)</label>
-                            <input type="number" class="form-input" id="homeLength" placeholder="40" value="40" min="10" max="200">
+                            <input type="number" class="form-input" id="homeLength" placeholder="40" value="40" min="10"
+                                max="200">
                         </div>
                         <div>
                             <label class="form-label" style="margin-bottom: 6px;">Breadth (feet)</label>
-                            <input type="number" class="form-input" id="homeBreadth" placeholder="30" value="30" min="10" max="200">
+                            <input type="number" class="form-input" id="homeBreadth" placeholder="30" value="30"
+                                min="10" max="200">
                         </div>
                     </div>
                 </div>
@@ -1290,14 +1325,15 @@
         <div class="modal">
             <div class="modal-header">
                 <h2 class="modal-title">
-                    <span id="roomModalIcon">🛏️</span> 
+                    <span id="roomModalIcon">🛏️</span>
                     <span id="roomModalTitle">Bedroom</span> Setup
                 </h2>
                 <button class="modal-close" onclick="closeRoomModal()">×</button>
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <label class="form-label">Room Name <span class="info-badge" id="roomNameBadge">Bedroom</span></label>
+                    <label class="form-label">Room Name <span class="info-badge"
+                            id="roomNameBadge">Bedroom</span></label>
                     <input type="text" class="form-input" id="roomName" placeholder="Master Bedroom">
                 </div>
                 <div class="form-group">
@@ -1305,17 +1341,20 @@
                     <div class="input-group">
                         <div>
                             <label class="form-label" style="margin-bottom: 6px;">Length (feet)</label>
-                            <input type="number" class="form-input" id="roomLength" placeholder="12" value="12" min="4" max="50">
+                            <input type="number" class="form-input" id="roomLength" placeholder="12" value="12" min="4"
+                                max="50">
                         </div>
                         <div>
                             <label class="form-label" style="margin-bottom: 6px;">Breadth (feet)</label>
-                            <input type="number" class="form-input" id="roomBreadth" placeholder="10" value="10" min="4" max="50">
+                            <input type="number" class="form-input" id="roomBreadth" placeholder="10" value="10" min="4"
+                                max="50">
                         </div>
                     </div>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Wall Color</label>
-                    <input type="color" class="form-input" id="roomColor" value="#2563eb" style="height: 50px; cursor: pointer;">
+                    <input type="color" class="form-input" id="roomColor" value="#2563eb"
+                        style="height: 50px; cursor: pointer;">
                 </div>
             </div>
             <div class="modal-footer">
@@ -1346,6 +1385,7 @@
         let showGrid = true;
         let snapEnabled = true;
         let SCALE = 15; // pixels per foot
+        let rotation = 0;
 
         // History Stacks
         let undoStack = [];
@@ -1408,7 +1448,7 @@
             canvas.addEventListener('click', handleCanvasClick);
             canvas.addEventListener('dragover', (e) => e.preventDefault());
             canvas.addEventListener('drop', handleDrop);
-            
+
             // Add Keyboard listeners for Ctrl+Z and Ctrl+Y
             window.addEventListener('keydown', handleKeyDown);
 
@@ -1417,7 +1457,7 @@
         }
 
         // --- UNDO / REDO LOGIC ---
-        
+
         function saveState() {
             const state = JSON.stringify({
                 elements: elements,
@@ -1442,7 +1482,7 @@
             const prevState = JSON.parse(undoStack.pop());
             elements = prevState.elements;
             project.rooms = prevState.rooms;
-            
+
             redrawAll();
             updateLayerCounts();
             updateDimensionDisplay();
@@ -1510,48 +1550,48 @@
 
             // Draw home boundary wall
             drawHomeWall();
-            
+
             // Hide welcome screen
             document.getElementById('welcomeScreen').style.display = 'none';
-            
+
             // Update displays
             updateDimensionDisplay();
             updateLayerCounts();
 
             closeProjectModal();
-            
+
             showToast('✓', 'Project created! Now select rooms or use drawing tools.');
         }
 
         function drawHomeWall() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
+
             if (showGrid) drawGrid();
-            
+
             const wallWidth = project.totalLength * SCALE;
             const wallHeight = project.totalBreadth * SCALE;
-            
+
             // Center the wall on canvas
             const x = (canvas.width - wallWidth) / 2;
             const y = (canvas.height - wallHeight) / 2;
-            
+
             project.homeWall = { x, y, width: wallWidth, height: wallHeight };
-            
+
             // Draw background
             ctx.fillStyle = '#f9fafb';
             ctx.fillRect(x, y, wallWidth, wallHeight);
-            
+
             // Draw wall border (thick outer walls)
             ctx.strokeStyle = '#1e293b';
             ctx.lineWidth = 10;
             ctx.strokeRect(x, y, wallWidth, wallHeight);
-            
+
             // Draw title
             ctx.fillStyle = '#1e293b';
             ctx.font = 'bold 18px DM Sans';
             ctx.textAlign = 'center';
             ctx.fillText(project.name, canvas.width / 2, y - 30);
-            
+
             // Draw dimensions
             ctx.font = '13px DM Sans';
             ctx.fillStyle = '#64748b';
@@ -1562,14 +1602,14 @@
             ctx.save();
             ctx.strokeStyle = '#e5e7eb';
             ctx.lineWidth = 0.5;
-            
+
             for (let x = 0; x <= canvas.width; x += gridSnap) {
                 ctx.beginPath();
                 ctx.moveTo(x, 0);
                 ctx.lineTo(x, canvas.height);
                 ctx.stroke();
             }
-            
+
             for (let y = 0; y <= canvas.height; y += gridSnap) {
                 ctx.beginPath();
                 ctx.moveTo(0, y);
@@ -1589,7 +1629,7 @@
 
             selectedRoomType = roomType;
             const config = roomConfig[roomType];
-            
+
             // Update modal
             document.getElementById('roomModalIcon').textContent = config.icon;
             document.getElementById('roomModalTitle').textContent = config.name;
@@ -1599,7 +1639,7 @@
             document.getElementById('roomLength').value = config.defaultLength;
             document.getElementById('roomBreadth').value = config.defaultBreadth;
             document.getElementById('roomColor').value = config.color;
-            
+
             document.getElementById('roomModal').classList.add('active');
         }
 
@@ -1640,15 +1680,15 @@
 
             placingRoom = true;
             closeRoomModal();
-            
+
             // Update room size display
             document.getElementById(`${selectedRoomType}-size`).textContent = `${length}' × ${breadth}'`;
-            
+
             // Highlight the room being placed
             document.getElementById(`room-${selectedRoomType}`).classList.add('placing');
-            
+
             // Close mobile menu if open
-            if(document.getElementById('sidebarLeft').classList.contains('mobile-active')) toggleMobileMenu();
+            if (document.getElementById('sidebarLeft').classList.contains('mobile-active')) toggleMobileMenu();
 
             showToast('📍', 'Click inside the home boundary to place the room');
         }
@@ -1660,7 +1700,7 @@
             document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
             document.getElementById(`tool-${tool}`).classList.add('active');
             document.querySelectorAll('.room-item').forEach(item => item.classList.remove('placing'));
-            
+
             if (tool === 'select') {
                 canvas.style.cursor = 'default';
             } else {
@@ -1668,16 +1708,36 @@
             }
 
             // Close mobile menu if open
-            if(document.getElementById('sidebarLeft').classList.contains('mobile-active')) toggleMobileMenu();
+            if (document.getElementById('sidebarLeft').classList.contains('mobile-active')) toggleMobileMenu();
         }
 
         // Canvas Event Handlers
-        function handleMouseDown(e) {
-            if (placingRoom) return; // Don't draw when placing rooms
-            
+        function getMousePos(e) {
             const rect = canvas.getBoundingClientRect();
-            startX = snapToGrid(e.clientX - rect.left);
-            startY = snapToGrid(e.clientY - rect.top);
+            let x = e.clientX - rect.left;
+            let y = e.clientY - rect.top;
+
+            const scaleX = canvas.width / (rotation % 180 === 0 ? rect.width : rect.height);
+            const scaleY = canvas.height / (rotation % 180 === 0 ? rect.height : rect.width);
+
+            if (rotation === 0) {
+                return { x: x * scaleX, y: y * scaleY };
+            } else if (rotation === 90) {
+                return { x: y * scaleX, y: (rect.width - x) * scaleY };
+            } else if (rotation === 180) {
+                return { x: (rect.width - x) * scaleX, y: (rect.height - y) * scaleY };
+            } else if (rotation === 270) {
+                return { x: (rect.height - y) * scaleX, y: x * scaleY };
+            }
+            return { x: x * scaleX, y: y * scaleY };
+        }
+
+        function handleMouseDown(e) {
+            if (placingRoom) return;
+
+            const pos = getMousePos(e);
+            startX = snapToGrid(pos.x);
+            startY = snapToGrid(pos.y);
             isDrawing = true;
 
             if (currentTool === 'text') {
@@ -1687,9 +1747,9 @@
         }
 
         function handleMouseMove(e) {
-            const rect = canvas.getBoundingClientRect();
-            const currentX = Math.floor(e.clientX - rect.left);
-            const currentY = Math.floor(e.clientY - rect.top);
+            const pos = getMousePos(e);
+            const currentX = pos.x;
+            const currentY = pos.y;
 
             if (isDrawing && !placingRoom) {
                 redrawAll();
@@ -1699,16 +1759,16 @@
 
         function handleMouseUp(e) {
             if (!isDrawing || placingRoom) return;
-            
-            const rect = canvas.getBoundingClientRect();
-            const endX = snapToGrid(e.clientX - rect.left);
-            const endY = snapToGrid(e.clientY - rect.top);
-            
+
+            const pos = getMousePos(e);
+            const endX = snapToGrid(pos.x);
+            const endY = snapToGrid(pos.y);
+
             if (Math.abs(endX - startX) > 5 || Math.abs(endY - startY) > 5) {
                 saveState(); // Save state before change
                 addElement(currentTool, startX, startY, endX, endY);
             }
-            
+
             isDrawing = false;
             redrawAll();
         }
@@ -1716,41 +1776,41 @@
         function handleCanvasClick(e) {
             if (!placingRoom || !currentRoom || !project.homeWall) return;
 
-            const rect = canvas.getBoundingClientRect();
-            const clickX = e.clientX - rect.left;
-            const clickY = e.clientY - rect.top;
+            const pos = getMousePos(e);
+            const clickX = pos.x;
+            const clickY = pos.y;
 
             // Check if click is inside home boundary
             const { x, y, width, height } = project.homeWall;
-            
-            if (clickX >= x + 15 && clickX <= x + width - 15 && 
+
+            if (clickX >= x + 15 && clickX <= x + width - 15 &&
                 clickY >= y + 15 && clickY <= y + height - 15) {
-                
+
                 // Snap to grid
                 const gridSize = 5 * SCALE;
                 const roomX = Math.round((clickX - x) / gridSize) * gridSize + x;
                 const roomY = Math.round((clickY - y) / gridSize) * gridSize + y;
-                
+
                 // Check if room fits at this position
-                if (roomX + currentRoom.width <= x + width - 10 && 
+                if (roomX + currentRoom.width <= x + width - 10 &&
                     roomY + currentRoom.height <= y + height - 10) {
-                    
+
                     saveState(); // Save state before placing room
 
                     currentRoom.x = roomX;
                     currentRoom.y = roomY;
-                    
+
                     project.rooms.push(currentRoom);
-                    
+
                     // Update displays
                     updateDimensionDisplay();
                     updateLayerCounts();
                     redrawAll();
-                    
+
                     placingRoom = false;
                     currentRoom = null;
                     document.querySelectorAll('.room-item').forEach(item => item.classList.remove('placing'));
-                    
+
                     showToast('✓', 'Room placed successfully!');
                 } else {
                     showToast('⚠️', 'Room doesn\'t fit at this position!');
@@ -1763,10 +1823,10 @@
         function handleDrop(e) {
             e.preventDefault();
             const symbolType = e.dataTransfer.getData('symbol');
-            const rect = canvas.getBoundingClientRect();
-            const x = snapToGrid(e.clientX - rect.left);
-            const y = snapToGrid(e.clientY - rect.top);
-            
+            const pos = getMousePos(e);
+            const x = snapToGrid(pos.x);
+            const y = snapToGrid(pos.y);
+
             saveState(); // Save state before dropping symbol
             addSymbol(symbolType, x, y);
         }
@@ -1789,7 +1849,7 @@
                 color: document.getElementById('wallColor').value,
                 thickness: parseInt(document.getElementById('wallThickness').value)
             };
-            
+
             elements.push(element);
             updateLayerCounts();
             updateDimensionDisplay();
@@ -1802,7 +1862,7 @@
                 x: x,
                 y: y
             };
-            
+
             elements.push(element);
             updateLayerCounts();
             redrawAll();
@@ -1830,8 +1890,8 @@
             ctx.setLineDash([5, 5]);
             ctx.strokeStyle = '#3b82f6';
             ctx.lineWidth = 2;
-            
-            switch(currentTool) {
+
+            switch (currentTool) {
                 case 'wall':
                     ctx.lineWidth = parseInt(document.getElementById('wallThickness').value);
                     ctx.strokeStyle = document.getElementById('wallColor').value;
@@ -1850,14 +1910,14 @@
                     drawDimensionLine(x1, y1, x2, y2);
                     break;
             }
-            
+
             ctx.restore();
         }
 
         function drawElement(element) {
             ctx.save();
-            
-            switch(element.type) {
+
+            switch (element.type) {
                 case 'wall':
                     ctx.strokeStyle = element.color;
                     ctx.lineWidth = element.thickness;
@@ -1886,7 +1946,7 @@
                     ctx.fillText(element.text, element.x, element.y);
                     break;
             }
-            
+
             ctx.restore();
         }
 
@@ -1902,17 +1962,17 @@
             const offsetY = -Math.cos(angle) * offsetDistance;
             const textX = midX + offsetX;
             const textY = midY + offsetY;
-            
+
             ctx.font = 'bold 12px DM Sans';
             const textWidth = ctx.measureText(`${lengthFt} ft`).width;
             const padding = 6;
-            
+
             ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
             ctx.fillRect(textX - textWidth / 2 - padding, textY - 10, textWidth + padding * 2, 20);
             ctx.strokeStyle = color;
             ctx.lineWidth = 1.5;
             ctx.strokeRect(textX - textWidth / 2 - padding, textY - 10, textWidth + padding * 2, 20);
-            
+
             ctx.fillStyle = color;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
@@ -1925,13 +1985,13 @@
             const height = Math.abs(y2 - y1);
             const minX = Math.min(x1, x2);
             const minY = Math.min(y1, y2);
-            
+
             ctx.fillStyle = preview ? 'rgba(139, 69, 19, 0.5)' : '#8B4513';
             ctx.fillRect(minX, minY, width, height);
             ctx.strokeStyle = preview ? 'rgba(101, 67, 33, 0.7)' : '#654321';
             ctx.lineWidth = 2;
             ctx.strokeRect(minX, minY, width, height);
-            
+
             ctx.strokeStyle = preview ? 'rgba(101, 67, 33, 0.5)' : '#654321';
             ctx.beginPath();
             if (width > height) {
@@ -1940,7 +2000,7 @@
                 ctx.arc(minX, minY, height, 0, Math.PI / 2);
             }
             ctx.stroke();
-            
+
             if (!preview) {
                 drawRectangleDimensions(minX, minY, width, height, '#8B4513');
             }
@@ -1951,13 +2011,13 @@
             const height = Math.abs(y2 - y1);
             const minX = Math.min(x1, x2);
             const minY = Math.min(y1, y2);
-            
+
             ctx.fillStyle = preview ? 'rgba(173, 216, 230, 0.5)' : '#ADD8E6';
             ctx.fillRect(minX, minY, width, height);
             ctx.strokeStyle = preview ? 'rgba(70, 130, 180, 0.7)' : '#4682B4';
             ctx.lineWidth = 2;
             ctx.strokeRect(minX, minY, width, height);
-            
+
             const midX = minX + width / 2;
             const midY = minY + height / 2;
             ctx.beginPath();
@@ -1966,7 +2026,7 @@
             ctx.moveTo(minX, midY);
             ctx.lineTo(minX + width, midY);
             ctx.stroke();
-            
+
             if (!preview) {
                 drawRectangleDimensions(minX, minY, width, height, '#4682B4');
             }
@@ -1980,7 +2040,7 @@
             ctx.moveTo(x1, y1);
             ctx.lineTo(x2, y2);
             ctx.stroke();
-            
+
             const angle = Math.atan2(y2 - y1, x2 - x1);
             const arrowLength = 10;
             ctx.beginPath();
@@ -1989,7 +2049,7 @@
             ctx.moveTo(x1, y1);
             ctx.lineTo(x1 + arrowLength * Math.cos(angle - Math.PI / 6), y1 + arrowLength * Math.sin(angle - Math.PI / 6));
             ctx.stroke();
-            
+
             const distance = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
             const measurement = (distance / SCALE).toFixed(1);
             ctx.font = 'bold 12px DM Sans';
@@ -2004,17 +2064,17 @@
             ctx.fillStyle = color;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            
+
             const lengthFt = (width / SCALE).toFixed(1);
             const breadthFt = (height / SCALE).toFixed(1);
             const areaFt = (lengthFt * breadthFt).toFixed(1);
-            
+
             ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
             ctx.fillRect(x + width / 2 - 35, y + height / 2 - 25, 70, 50);
             ctx.strokeStyle = color;
             ctx.lineWidth = 1;
             ctx.strokeRect(x + width / 2 - 35, y + height / 2 - 25, 70, 50);
-            
+
             ctx.fillStyle = color;
             ctx.fillText(`L: ${lengthFt}'`, x + width / 2, y + height / 2 - 12);
             ctx.fillText(`B: ${breadthFt}'`, x + width / 2, y + height / 2 + 3);
@@ -2115,15 +2175,57 @@
         }
 
         function updateScale() {
-            SCALE = parseInt(document.getElementById('scaleSelect').value);
+            const oldScale = SCALE;
+            SCALE = parseInt(document.getElementById('zoomRange').value);
+
             if (project.homeWall) {
+                // To keep elements and rooms consistent, we would need to scale their positions.
+                // For now, we'll re-calculate home wall and trigger redraw.
+                // Note: The previous implementation deleted rooms; we'll keep them but they might shift.
+                // A better approach would be storing coordinates in feet.
                 project.homeWall.width = project.totalLength * SCALE;
                 project.homeWall.height = project.totalBreadth * SCALE;
                 project.homeWall.x = (canvas.width - project.homeWall.width) / 2;
                 project.homeWall.y = (canvas.height - project.homeWall.height) / 2;
-                project.rooms = []; // Simplified: Resetting rooms on scale change for math consistency
+
+                // Scale existing components
+                const ratio = SCALE / oldScale;
+                project.rooms.forEach(room => {
+                    const relX = (room.x - (canvas.width - project.totalLength * oldScale) / 2) * ratio;
+                    const relY = (room.y - (canvas.height - project.totalBreadth * oldScale) / 2) * ratio;
+
+                    room.width = room.length * SCALE;
+                    room.height = room.breadth * SCALE;
+                    room.x = relX + project.homeWall.x;
+                    room.y = relY + project.homeWall.y;
+                });
+
+                elements.forEach(el => {
+                    if (el.type !== 'text' && el.type !== 'symbol') {
+                        const relX1 = (el.x1 - (canvas.width - project.totalLength * oldScale) / 2) * ratio;
+                        const relX2 = (el.x2 - (canvas.width - project.totalLength * oldScale) / 2) * ratio;
+                        const relY1 = (el.y1 - (canvas.height - project.totalBreadth * oldScale) / 2) * ratio;
+                        const relY2 = (el.y2 - (canvas.height - project.totalBreadth * oldScale) / 2) * ratio;
+                        el.x1 = relX1 + project.homeWall.x;
+                        el.x2 = relX2 + project.homeWall.x;
+                        el.y1 = relY1 + project.homeWall.y;
+                        el.y2 = relY2 + project.homeWall.y;
+                    } else if (el.type === 'symbol' || el.type === 'text') {
+                        const relX = (el.x - (canvas.width - project.totalLength * oldScale) / 2) * ratio;
+                        const relY = (el.y - (canvas.height - project.totalBreadth * oldScale) / 2) * ratio;
+                        el.x = relX + project.homeWall.x;
+                        el.y = relY + project.homeWall.y;
+                    }
+                });
             }
             redrawAll();
+        }
+
+        function toggleRotation() {
+            rotation = (rotation + 90) % 360;
+            const canvasEl = document.getElementById('designCanvas');
+            canvasEl.style.transform = `rotate(${rotation}deg)`;
+            showToast('🔄', `Rotated to ${rotation}°`);
         }
 
         function updateGrid() {
@@ -2188,4 +2290,5 @@
         init();
     </script>
 </body>
+
 </html>
