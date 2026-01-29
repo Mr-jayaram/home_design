@@ -3347,9 +3347,10 @@
         function dragSymbol(event, symbolType) {
             event.dataTransfer.setData('symbol', symbolType);
 
-            // For mobile: also activate tap-to-place mode
-            // This ensures drag works on mobile by falling back to tap placement
-            if ('ontouchstart' in window) {
+            // For mobile devices only: activate tap-to-place mode
+            // Desktop keeps normal drag-and-drop
+            const isMobile = window.innerWidth <= 992;
+            if (isMobile && 'ontouchstart' in window) {
                 pickItem(symbolType);
             }
 
