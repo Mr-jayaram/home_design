@@ -752,6 +752,7 @@
             font-weight: 700;
             margin-bottom: 12px;
             background: linear-gradient(135deg, var(--primary), var(--secondary));
+            background-clip: text;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
@@ -983,6 +984,10 @@
                         <div class="tool-btn" onclick="selectTool('text')" id="tool-text">
                             <span class="tool-icon">📝</span>
                             <div class="tool-label">Text</div>
+                        </div>
+                        <div class="tool-btn" onclick="selectTool('eraser')" id="tool-eraser">
+                            <span class="tool-icon">🧹</span>
+                            <div class="tool-label">Eraser</div>
                         </div>
                     </div>
                 </div>
@@ -1422,8 +1427,21 @@
                                 <span class="dimension-unit">ft</span>
                             </div>
                         </div>
+                        <div class="property-group" id="eraserSettings" style="display: none;">
+                            <div class="property-title">Eraser Settings</div>
+                            <div class="property-row">
+                                <label class="property-label">Eraser Size (ft)</label>
+                                <input type="range" class="property-input" id="eraserSize" min="0.5" max="5" step="0.5"
+                                    value="1" oninput="updateEraserCursor()">
+                                <div
+                                    style="display: flex; justify-content: space-between; font-size: 10px; color: var(--text-secondary); margin-top: 4px;">
+                                    <span>0.5ft</span>
+                                    <span id="eraserSizeVal">1ft</span>
+                                    <span>5ft</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </div>
             </aside>
         </div>
 
@@ -2082,8 +2100,9 @@
             if (!placingItemType) return;
 
             // Use the tracked mouseX/mouseY which are updated by touchmove/mousemove
-            const x = snapToGrid(mouseX);
-            const y = snapToGrid(mouseY);
+            const processed = getProcessedPoint(mouseX, mouseY);
+            const x = processed.x;
+            const y = processed.y;
 
             saveState();
 
@@ -2193,12 +2212,13 @@
                 if (currentTool !== 'select' || placingRoom || e.touches.length > 1) e.preventDefault();
             }, { passive: false });
 
-            canvas.addEventListener('click', handleCanvasClick);
+            canvas.addEventListener('click', (e) => {
+                if (placingItemType) handleCanvasClick(e);
+            });
 
             canvas.addEventListener('touchend', (e) => {
                 if (e.touches.length < 2) isPanning = false;
                 handleMouseUp(e);
-                if (placingItemType) handleCanvasClick(e);
             }, { passive: false });
 
             canvas.addEventListener('dragover', (e) => e.preventDefault());
@@ -2392,6 +2412,19 @@
             // Draw home boundary wall
             drawHomeWall();
 
+            // CONVERT Boundary to Erasable Wall Elements
+            if (project.homeWall) {
+                const { x, y, width, height } = project.homeWall;
+                const boundaryColor = '#1e293b';
+                const boundaryThick = 10;
+
+                // Add 4 boundary walls to elements
+                elements.push({ type: 'wall', x1: x, y1: y, x2: x + width, y2: y, color: boundaryColor, thickness: boundaryThick, isBoundary: true }); // North
+                elements.push({ type: 'wall', x1: x, y1: y + height, x2: x + width, y2: y + height, color: boundaryColor, thickness: boundaryThick, isBoundary: true }); // South
+                elements.push({ type: 'wall', x1: x, y1: y, x2: x, y2: y + height, color: boundaryColor, thickness: boundaryThick, isBoundary: true }); // West
+                elements.push({ type: 'wall', x1: x + width, y1: y, x2: x + width, y2: y + height, color: boundaryColor, thickness: boundaryThick, isBoundary: true }); // East
+            }
+
             // Hide welcome screen
             document.getElementById('welcomeScreen').style.display = 'none';
 
@@ -2566,8 +2599,13 @@
 
             if (tool === 'select') {
                 canvas.style.cursor = 'default';
+                document.getElementById('eraserSettings').style.display = 'none';
+            } else if (tool === 'eraser') {
+                updateEraserCursor();
+                document.getElementById('eraserSettings').style.display = 'block';
             } else {
                 canvas.style.cursor = 'crosshair';
+                document.getElementById('eraserSettings').style.display = 'none';
             }
 
             // Close mobile menu if open
@@ -2628,8 +2666,16 @@
             if (placingItemType) return;
 
             const pos = getMousePos(e);
-            startX = snapToGrid(pos.x);
-            startY = snapToGrid(pos.y);
+            const processedStart = getProcessedPoint(pos.x, pos.y);
+            startX = processedStart.x;
+            startY = processedStart.y;
+
+            if (currentTool === 'eraser') {
+                saveState();
+                isDrawing = true;
+                eraseAt(pos.x, pos.y);
+                return;
+            }
 
             if (currentTool === 'select') {
                 // Check for resize handle first
@@ -2939,6 +2985,11 @@
             mouseX = currentX;
             mouseY = currentY;
 
+            if (currentTool === 'eraser' && isDrawing) {
+                eraseAt(pos.x, pos.y);
+                return;
+            }
+
             if (placingItemType) {
                 redrawAll();
                 return;
@@ -2958,21 +3009,16 @@
                     const s = SCALE;
                     if (config?.isStair) {
                         if (config.stairType === 'spiral') {
-                            // Update radius based on distance from center
                             const dist = Math.sqrt(Math.pow(currentX - selectedElement.x, 2) + Math.pow(currentY - selectedElement.y, 2));
                             selectedElement.radius = Math.max(1, (dist / s));
                         } else {
-                            // Straight or L-Shape
                             const newW = Math.max(2, (currentX - selectedElement.x) * 2 / s);
                             const newL = Math.max(2, (currentY - selectedElement.y) * 2 / s);
-
                             if (config.stairType === 'straight') {
                                 selectedElement.width = Math.round(newW * 2) / 2;
                                 selectedElement.length = Math.round(newL * 2) / 2;
                                 selectedElement.steps = Math.round(selectedElement.length);
                             } else if (config.stairType === 'lshape') {
-                                // For L-shape, 'width' is the run thickness, 'length' is first run, 'breadth' is second
-                                // We'll map horizontal drag to breadth and vertical to length
                                 selectedElement.length = Math.round(newL * 2) / 2;
                                 selectedElement.breadth = Math.round(newW * 2) / 2;
                                 selectedElement.steps = Math.round(selectedElement.length + selectedElement.breadth);
@@ -2989,38 +3035,26 @@
                 if (selectedRoom) {
                     let nextX = snapToGrid(currentX - dragOffsetX);
                     let nextY = snapToGrid(currentY - dragOffsetY);
-                    const snapDist = 15; // 1 foot snap range
-
-                    // 1. Snap to Home Boundary
+                    const snapDist = 15;
                     if (project.homeWall) {
                         const hx1 = project.homeWall.x, hy1 = project.homeWall.y;
                         const hx2 = project.homeWall.x + project.homeWall.width, hy2 = project.homeWall.y + project.homeWall.height;
-
-                        // Vertical edges
                         if (Math.abs(nextX - hx1) < snapDist) nextX = hx1;
                         if (Math.abs((nextX + selectedRoom.width) - hx2) < snapDist) nextX = hx2 - selectedRoom.width;
-                        // Horizontal edges
                         if (Math.abs(nextY - hy1) < snapDist) nextY = hy1;
                         if (Math.abs((nextY + selectedRoom.height) - hy2) < snapDist) nextY = hy2 - selectedRoom.height;
                     }
-
-                    // 2. Snap to Neighbor Rooms
                     project.rooms.forEach(other => {
                         if (other === selectedRoom) return;
-
-                        // Vertical edge snaps (X)
                         if (Math.abs(nextX - other.x) < snapDist) nextX = other.x;
                         if (Math.abs(nextX - (other.x + other.width)) < snapDist) nextX = other.x + other.width;
                         if (Math.abs((nextX + selectedRoom.width) - other.x) < snapDist) nextX = other.x - selectedRoom.width;
                         if (Math.abs((nextX + selectedRoom.width) - (other.x + other.width)) < snapDist) nextX = other.x + other.width - selectedRoom.width;
-
-                        // Horizontal edge snaps (Y)
                         if (Math.abs(nextY - other.y) < snapDist) nextY = other.y;
                         if (Math.abs(nextY - (other.y + other.height)) < snapDist) nextY = other.y + other.height;
                         if (Math.abs((nextY + selectedRoom.height) - other.y) < snapDist) nextY = other.y - selectedRoom.height;
                         if (Math.abs((nextY + selectedRoom.height) - (other.y + other.height)) < snapDist) nextY = other.y + other.height - selectedRoom.height;
                     });
-
                     selectedRoom.x = nextX;
                     selectedRoom.y = nextY;
                 } else if (selectedElement) {
@@ -3040,37 +3074,30 @@
                 return;
             }
 
-            // Update cursor based on hover
             if (currentTool === 'select') {
                 const target = findTarget(pos.x, pos.y);
-
-                // Check if hovering over resize handle
                 let onHandle = false;
                 if (selectedRoom) {
-                    const handleX = selectedRoom.x + selectedRoom.width;
-                    const handleY = selectedRoom.y + selectedRoom.height;
-                    if (Math.abs(pos.x - handleX) < 15 && Math.abs(pos.y - handleY) < 15) onHandle = true;
+                    if (Math.abs(pos.x - (selectedRoom.x + selectedRoom.width)) < 15 && Math.abs(pos.y - (selectedRoom.y + selectedRoom.height)) < 15) onHandle = true;
                 } else if (selectedElement?.type === 'symbol') {
                     const config = symbols[selectedElement.symbolType];
                     if (config?.isStair) {
                         const s = SCALE;
-                        const w = (selectedElement.width || config.width) * s;
-                        const l = (selectedElement.length || config.length) * s;
-                        const handleX = selectedElement.x + w / 2;
-                        const handleY = selectedElement.y + l / 2;
-                        if (Math.abs(pos.x - handleX) < 15 && Math.abs(pos.y - handleY) < 15) onHandle = true;
+                        if (Math.abs(pos.x - (selectedElement.x + (selectedElement.width || config.width) * s / 2)) < 15 && Math.abs(pos.y - (selectedElement.y + (selectedElement.length || config.length) * s / 2)) < 15) onHandle = true;
                     }
                 }
-
                 if (onHandle) canvas.style.cursor = 'nwse-resize';
                 else canvas.style.cursor = target ? 'grab' : 'default';
+            } else if (currentTool === 'eraser') {
+                canvas.style.cursor = 'url("data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'24\' height=\'24\' style=\'fill:black\'><circle cx=\'12\' cy=\'12\' r=\'10\' fill=\'white\' stroke=\'black\' stroke-width=\'2\' opacity=\'0.5\'/></svg>") 12 12, auto';
             } else {
                 canvas.style.cursor = 'crosshair';
             }
 
             if (isDrawing && !placingRoom) {
                 redrawAll();
-                drawPreview(startX, startY, snapToGrid(currentX), snapToGrid(currentY));
+                const processedCurrent = getProcessedPoint(currentX, currentY);
+                drawPreview(startX, startY, processedCurrent.x, processedCurrent.y);
             }
         }
 
@@ -3096,8 +3123,9 @@
             }
 
             const pos = getMousePos(e);
-            const endX = snapToGrid(pos.x);
-            const endY = snapToGrid(pos.y);
+            const processedEnd = getProcessedPoint(pos.x, pos.y);
+            const endX = processedEnd.x;
+            const endY = processedEnd.y;
 
             if (Math.abs(endX - startX) > 5 || Math.abs(endY - startY) > 5) {
                 saveState(); // Save state before change
@@ -3115,8 +3143,9 @@
 
             if (!symbolType) return;
             const pos = getMousePos(e);
-            const x = snapToGrid(pos.x);
-            const y = snapToGrid(pos.y);
+            const processed = getProcessedPoint(pos.x, pos.y);
+            const x = processed.x;
+            const y = processed.y;
 
             saveState();
 
@@ -3156,11 +3185,151 @@
         }
 
         // Drawing Functions
+        function updateEraserCursor() {
+            if (currentTool !== 'eraser') return;
+            const sizeFt = parseFloat(document.getElementById('eraserSize').value);
+            document.getElementById('eraserSizeVal').textContent = sizeFt + 'ft';
+            const r = sizeFt * SCALE;
+            canvas.style.cursor = `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='${r * 2}' height='${r * 2}'><circle cx='${r}' cy='${r}' r='${r - 1}' fill='white' stroke='black' stroke-width='2' opacity='0.5'/></svg>") ${r} ${r}, auto`;
+        }
+
         function snapToGrid(value) {
             if (snapEnabled && gridSnap > 0) {
                 return Math.round(value / gridSnap) * gridSnap;
             }
             return value;
+        }
+
+        function eraseAt(ex, ey) {
+            const sizeFt = parseFloat(document.getElementById('eraserSize').value) || 1;
+            const radius = sizeFt * SCALE;
+            let changed = false;
+            const newElements = [];
+
+            elements.forEach(el => {
+                const lineTypes = ['wall', 'door', 'window', 'dimension'];
+                if (lineTypes.includes(el.type)) {
+                    // Line splitting logic
+                    const dx = el.x2 - el.x1;
+                    const dy = el.y2 - el.y1;
+                    const d2 = dx * dx + dy * dy;
+                    if (d2 < 1) { newElements.push(el); return; }
+
+                    const t = ((ex - el.x1) * dx + (ey - el.y1) * dy) / d2;
+                    const closestX = el.x1 + Math.max(0, Math.min(1, t)) * dx;
+                    const closestY = el.y1 + Math.max(0, Math.min(1, t)) * dy;
+                    const dist = Math.sqrt(Math.pow(ex - closestX, 2) + Math.pow(ey - closestY, 2));
+
+                    if (dist < radius) {
+                        changed = true;
+                        const Qx = el.x1 - ex;
+                        const Qy = el.y1 - ey;
+                        const a = d2;
+                        const b = 2 * (Qx * dx + Qy * dy);
+                        const c = (Qx * Qx + Qy * Qy) - radius * radius;
+                        const det = b * b - 4 * a * c;
+
+                        if (det >= 0) {
+                            const root = Math.sqrt(det);
+                            const t1 = (-b - root) / (2 * a);
+                            const t2 = (-b + root) / (2 * a);
+                            const startT = Math.min(t1, t2);
+                            const endT = Math.max(t1, t2);
+
+                            if (startT > 0.01) {
+                                newElements.push({ ...el, x2: el.x1 + startT * dx, y2: el.y1 + startT * dy });
+                            }
+                            if (endT < 0.99) {
+                                newElements.push({ ...el, x1: el.x1 + endT * dx, y1: el.y1 + endT * dy });
+                            }
+                        }
+                    } else {
+                        newElements.push(el);
+                    }
+                } else if (el.type === 'symbol' || el.type === 'text') {
+                    const d = Math.sqrt(Math.pow(ex - el.x, 2) + Math.pow(ey - el.y, 2));
+                    if (d < radius + 10) {
+                        changed = true;
+                    } else {
+                        newElements.push(el);
+                    }
+                } else {
+                    newElements.push(el);
+                }
+            });
+
+            if (changed) {
+                elements = newElements;
+                updateLayerCounts();
+                redrawAll();
+            }
+        }
+
+        function getProcessedPoint(rawX, rawY) {
+            let x = snapToGrid(rawX);
+            let y = snapToGrid(rawY);
+
+            // Determine if the current action is wall-like (needs auto-join)
+            const wallTools = ['wall', 'door', 'window', 'dimension'];
+            const isWallLike = wallTools.includes(currentTool) || (placingItemType && placingItemType.startsWith('template_'));
+
+            if (isWallLike) {
+                // Auto-join/snap to nearest endpoint or wall line (within 1 foot / SCALE pixels)
+                const snapDist = SCALE;
+                let bestSnap = { x: x, y: y, dist: snapDist + 1 };
+
+                const checkPoint = (px, py) => {
+                    const d = Math.sqrt(Math.pow(x - px, 2) + Math.pow(y - py, 2));
+                    if (d < bestSnap.dist) {
+                        bestSnap = { x: px, y: py, dist: d };
+                    }
+                };
+
+                const checkLine = (x1, y1, x2, y2) => {
+                    const l2 = Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2);
+                    if (l2 === 0) return;
+                    let t = ((x - x1) * (x2 - x1) + (y - y1) * (y2 - y1)) / l2;
+                    t = Math.max(0, Math.min(1, t));
+                    checkPoint(x1 + t * (x2 - x1), y1 + t * (y2 - y1));
+                };
+
+                // 1. Check Home Boundary Walls
+                if (project.homeWall) {
+                    const h = project.homeWall;
+                    checkLine(h.x, h.y, h.x + h.width, h.y); // North
+                    checkLine(h.x, h.y + h.height, h.x + h.width, h.y + h.height); // South
+                    checkLine(h.x, h.y, h.x, h.y + h.height); // West
+                    checkLine(h.x + h.width, h.y, h.x + h.width, h.y + h.height); // East
+                }
+
+                // 2. Check Room walls
+                project.rooms.forEach(r => {
+                    checkLine(r.x, r.y, r.x + r.width, r.y);
+                    checkLine(r.x, r.y + r.height, r.x + r.width, r.y + r.height);
+                    checkLine(r.x, r.y, r.x, r.y + r.height);
+                    checkLine(r.x + r.width, r.y, r.x + r.width, r.y + r.height);
+                });
+
+                // 3. Check Manual Walls
+                elements.forEach(el => {
+                    if (el.type === 'wall') {
+                        checkLine(el.x1, el.y1, el.x2, el.y2);
+                    }
+                });
+
+                if (bestSnap.dist <= snapDist) {
+                    x = bestSnap.x;
+                    y = bestSnap.y;
+                }
+            }
+
+            // Constrain to Home Wall Boundary
+            if (project.homeWall) {
+                x = Math.max(project.homeWall.x, Math.min(project.homeWall.x + project.homeWall.width, x));
+                y = Math.max(project.homeWall.y, Math.min(project.homeWall.y + project.homeWall.height, y));
+            }
+
+            return { x, y };
         }
 
         function addElement(type, x1, y1, x2, y2) {
@@ -3902,7 +4071,8 @@
                 }
             };
 
-            // 1. Process Home Boundary first
+            // 1. Process Home Boundary Removed (Now handled as elements)
+            /*
             if (project.homeWall) {
                 const { x, y, width, height } = project.homeWall;
                 addSegment(x, y, x + width, y, 10); // North
@@ -3910,6 +4080,7 @@
                 addSegment(x, y, x, y + height, 10); // West
                 addSegment(x + width, y, x + width, y + height, 10); // East
             }
+            */
 
             // 2. Process room walls
             project.rooms.forEach(room => {
