@@ -1290,6 +1290,10 @@
                         <button class="btn btn-secondary btn-icon" onclick="toggleSnap()" title="Toggle Snap">
                             <span>🧲</span>
                         </button>
+                        <button class="btn btn-secondary btn-icon active" id="roomModeBtn" onclick="toggleRoomMode()"
+                            title="Toggle Room Mode">
+                            <span>🏠</span>
+                        </button>
                     </div>
                 </div>
 
@@ -1337,6 +1341,39 @@
                                     style="background: #ef4444; color: white; border: none;">
                                     <span>🗑</span> Delete
                                 </button>
+                            </div>
+
+                            <!-- Color Property (Paint) -->
+                            <div id="selectionColorRow"
+                                style="display: none; border-top: 1px solid #fecaca; padding-top: 10px;">
+                                <div
+                                    style="font-size: 11px; font-weight: bold; color: #991b1b; margin-bottom: 6px; text-transform: uppercase;">
+                                    Paint / Appearance</div>
+
+                                <div id="singleColorCtrl">
+                                    <div style="display: flex; align-items: center; gap: 10px;">
+                                        <input type="color" id="selectionColorPicker"
+                                            onchange="changeSelectedColor('single')"
+                                            style="width: 40px; height: 32px; border: 2px solid #fecaca; border-radius: 6px; cursor: pointer; padding: 0;">
+                                        <span style="font-size: 13px; color: #7f1d1d;" id="colorLabel">Paint
+                                            Color</span>
+                                    </div>
+                                </div>
+
+                                <div id="dualColorCtrl" style="display: none; flex-direction: column; gap: 8px;">
+                                    <div style="display: flex; align-items: center; gap: 10px;">
+                                        <input type="color" id="innerColorPicker"
+                                            onchange="changeSelectedColor('inner')"
+                                            style="width: 40px; height: 32px; border: 2px solid #fecaca; border-radius: 6px; cursor: pointer;">
+                                        <span style="font-size: 12px; color: #7f1d1d;">Inside Wall</span>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 10px;">
+                                        <input type="color" id="outerColorPicker"
+                                            onchange="changeSelectedColor('outer')"
+                                            style="width: 40px; height: 32px; border: 2px solid #fecaca; border-radius: 6px; cursor: pointer;">
+                                        <span style="font-size: 12px; color: #7f1d1d;">Outside Wall</span>
+                                    </div>
+                                </div>
                             </div>
 
                             <!-- Scale Controls -->
@@ -1947,7 +1984,16 @@
 
         // --- UPDATED DRAWING FUNCTIONS FOR EXPORT STYLE ---
 
+        function toggleRoomMode() {
+            showRoomMode = !showRoomMode;
+            const btn = document.getElementById('roomModeBtn');
+            if (btn) btn.classList.toggle('active', showRoomMode);
+            redrawAll();
+            showToast('🏠', `Room Mode: ${showRoomMode ? 'ON' : 'OFF'}`);
+        }
+
         function drawAllRooms() {
+            if (!showRoomMode && !isExporting) return;
             // pass 1: Backgrounds
             project.rooms.forEach(room => {
                 if (isExporting) {
@@ -2026,7 +2072,8 @@
             if (flippedSwing) { ctx.scale(1, -1); }
 
             // Style
-            ctx.strokeStyle = isExporting ? '#000000' : '#1e293b';
+            const color = element?.color || (isExporting ? '#000000' : '#1e293b');
+            ctx.strokeStyle = color;
             ctx.lineWidth = isExporting ? 3 : 2; // Thicker for print
 
             // Door Frame
@@ -2047,6 +2094,18 @@
             ctx.arc(0, 0, distance, 0, -Math.PI / 2, true);
             ctx.stroke();
 
+            // Selection highlight for door
+            if (selectedElement === element) {
+                ctx.save();
+                ctx.strokeStyle = '#ef4444';
+                ctx.lineWidth = (isExporting ? 2 : 1) + 4;
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath();
+                ctx.arc(0, 0, distance + 5, 0, -Math.PI / 2, true);
+                ctx.stroke();
+                ctx.restore();
+            }
+
             ctx.restore();
 
             // Labels (Skip if exporting to keep it clean, or add small)
@@ -2055,7 +2114,7 @@
             }
         }
 
-        function drawWindow(x1, y1, x2, y2, preview) {
+        function drawWindow(x1, y1, x2, y2, preview, element = null) {
             const distance = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
             const angle = Math.atan2(y2 - y1, x2 - x1);
             const thickness = parseInt(document.getElementById('wallThickness').value);
@@ -2067,9 +2126,19 @@
             ctx.fillStyle = 'white';
             ctx.fillRect(0, -thickness / 2, distance, thickness);
 
-            ctx.strokeStyle = isExporting ? '#000000' : '#1e293b';
+            const color = element?.color || (isExporting ? '#000000' : '#1e293b');
+            ctx.strokeStyle = color;
             ctx.lineWidth = isExporting ? 3 : 1.5;
             ctx.strokeRect(0, -thickness / 2, distance, thickness);
+
+            // If selected, add high contrast highlight
+            if (selectedElement === element) {
+                ctx.strokeStyle = '#ef4444';
+                ctx.lineWidth = (isExporting ? 3 : 1.5) + 4;
+                ctx.setLineDash([5, 5]);
+                ctx.strokeRect(0, -thickness / 2 - 2, distance, thickness + 4);
+                ctx.setLineDash([]);
+            }
 
             ctx.beginPath();
             ctx.lineWidth = isExporting ? 2 : 1;
@@ -2166,6 +2235,7 @@
         let SCALE = 15; // pixels per foot
         let rotation = 0;
         let showGridNumbers = false;
+        let showRoomMode = true; // Default room mode
         let offsetX = 0;
         let offsetY = 0;
         let lastTouchX = 0;
@@ -3059,27 +3129,19 @@
 
         function findTarget(x, y) {
             const isMobile = window.innerWidth <= 992;
-            // Check rooms first (top layer)
-            for (let i = project.rooms.length - 1; i >= 0; i--) {
-                const r = project.rooms[i];
-                if (x >= r.x && x <= r.x + r.width && y >= r.y && y <= r.y + r.height) {
-                    return { type: 'room', data: r };
-                }
-            }
 
-            // Check elements
+            // Check elements FIRST (makes painting walls easier)
             for (let i = elements.length - 1; i >= 0; i--) {
                 const el = elements[i];
                 if (el.type === 'text' || el.type === 'symbol') {
                     const config = symbols[el.symbolType];
-                    // Transform click coordinate into the element's local (rotated) space
                     const dx = x - el.x;
                     const dy = y - el.y;
                     const rad = ((el.rotation || 0) * Math.PI) / 180;
                     const localX = dx * Math.cos(-rad) - dy * Math.sin(-rad);
                     const localY = dx * Math.sin(-rad) + dy * Math.cos(-rad);
 
-                    let w = 40, h = 40; // Base hit area
+                    let w = 40, h = 40;
                     if (config) {
                         const s = SCALE;
                         if (config.isStair) {
@@ -3089,7 +3151,6 @@
                                 w = (el.radius || config.radius) * 2 * s * (el.scale || 1);
                                 h = w;
                             } else if (config.stairType === 'lshape') {
-                                // For L-shape, allow selection in the larger footprint box
                                 w = Math.max(w, (el.breadth || config.breadth) * s * (el.scale || 1));
                                 h = Math.max(h, (el.length || config.length) * s * (el.scale || 1));
                             }
@@ -3098,16 +3159,23 @@
                             h = config.height * (el.scale || 1);
                         }
                     }
-                    // Check if clicked point is inside the bounding box (with 10px padding)
                     if (Math.abs(localX) < (w / 2) + 10 && Math.abs(localY) < (h / 2) + 10) {
                         return { type: 'element', data: el };
                     }
                 } else {
-                    // Line hit test (Wall, Door, Window, Dimension)
-                    // Increase hit tolerance for easier selection on mobile
                     const tolerance = isMobile ? 20 : 10;
                     if (isPointNearLine(x, y, el.x1, el.y1, el.x2, el.y2, tolerance)) {
                         return { type: 'element', data: el };
+                    }
+                }
+            }
+
+            // Check rooms SECOND (if room mode is on)
+            if (showRoomMode) {
+                for (let i = project.rooms.length - 1; i >= 0; i--) {
+                    const r = project.rooms[i];
+                    if (x >= r.x && x <= r.x + r.width && y >= r.y && y <= r.y + r.height) {
+                        return { type: 'room', data: r };
                     }
                 }
             }
@@ -3145,11 +3213,47 @@
 
                 doorCtrls.forEach(c => c.style.display = (selectedElement?.type === 'door') ? 'block' : 'none');
 
+                const isWall = selectedElement?.type === 'wall';
+                const isColorable = selectedElement && (isWall || selectedElement.type === 'door' || selectedElement.type === 'window' || selectedElement.type === 'text');
+
+                document.getElementById('selectionColorRow').style.display = isColorable ? 'block' : 'none';
+
+                if (isColorable) {
+                    if (isWall) {
+                        document.getElementById('singleColorCtrl').style.display = 'none';
+                        document.getElementById('dualColorCtrl').style.display = 'flex';
+                        document.getElementById('innerColorPicker').value = selectedElement.color || '#475569';
+                        document.getElementById('outerColorPicker').value = selectedElement.color2 || selectedElement.color || '#475569';
+                    } else {
+                        document.getElementById('singleColorCtrl').style.display = 'block';
+                        document.getElementById('dualColorCtrl').style.display = 'none';
+                        document.getElementById('selectionColorPicker').value = selectedElement.color || (selectedElement.type === 'text' ? '#000000' : '#475569');
+                        document.getElementById('colorLabel').textContent = selectedElement.type === 'text' ? 'Text Color' : 'Paint Color';
+                    }
+                }
+
                 const isScalable = selectedElement?.type === 'symbol' || selectedRoom;
                 scaleCtrls.style.display = isScalable ? 'block' : 'none';
             } else {
                 panel.style.display = 'none';
             }
+        }
+
+        function changeSelectedColor(type) {
+            if (!selectedElement) return;
+            saveState();
+
+            if (type === 'single') {
+                selectedElement.color = document.getElementById('selectionColorPicker').value;
+            } else if (type === 'inner') {
+                selectedElement.color = document.getElementById('innerColorPicker').value;
+            } else if (type === 'outer') {
+                selectedElement.color2 = document.getElementById('outerColorPicker').value;
+            }
+
+            redrawAll();
+            if (is3DMode) init3D(); // Live update 3D view
+            showToast('🎨', 'Color updated');
         }
 
         function rotateSelected() {
@@ -4370,12 +4474,12 @@
             const wallColor = isExporting ? '#000000' : (document.getElementById('wallColor').value || '#1e293b');
             const segments = new Set();
 
-            const addSegment = (x1, y1, x2, y2, specialThick = null) => {
+            const addSegment = (x1, y1, x2, y2, specialThick = null, specialColor = null) => {
                 const r = v => Math.round(v);
                 const p1 = `${r(x1)},${r(y1)}|${r(x2)},${r(y2)}`;
                 const p2 = `${r(x2)},${r(y2)}|${r(x1)},${r(y1)}`;
                 if (!segments.has(p1) && !segments.has(p2)) {
-                    ctx.strokeStyle = wallColor;
+                    ctx.strokeStyle = specialColor || wallColor;
                     ctx.lineWidth = specialThick || (isExporting ? 4 : wallThick); // Thicker walls for print
                     ctx.lineCap = 'square';
                     ctx.beginPath();
@@ -4409,7 +4513,7 @@
             // 3. Process manual walls
             elements.forEach(element => {
                 if (element.type === 'wall') {
-                    addSegment(element.x1, element.y1, element.x2, element.y2);
+                    addSegment(element.x1, element.y1, element.x2, element.y2, null, element.color);
                     drawWallDimension(element.x1, element.y1, element.x2, element.y2, element.color);
 
                     // Draw Selection Highlight for Wall
@@ -4943,7 +5047,7 @@
                 }
 
                 const wallRegistry = new Set();
-                function add3DWall(x1, z1, x2, z2, h, t, c, yOff = 0) {
+                function add3DWall(x1, z1, x2, z2, h, t, c, yOff = 0, c2 = null) {
                     const r = v => Math.round(v);
                     const pOffset = yOff > 0 ? `|Y${r(yOff)}` : '';
                     const p1 = `${r(x1)},${r(z1)}|${r(x2)},${r(z2)}${pOffset}`;
@@ -4956,8 +5060,19 @@
                     const angle = Math.atan2(dz, dx);
 
                     const geo = new THREE.BoxGeometry(length, h, t);
-                    const mat = new THREE.MeshStandardMaterial({ color: c });
-                    const wall = new THREE.Mesh(geo, mat);
+
+                    let materials;
+                    if (c2 && c2 !== c) {
+                        // Multi-material for different sides
+                        // 0,1: Width Ends, 2,3: Top/Bottom, 4,5: Long Sides (Inside/Outside)
+                        const mat1 = new THREE.MeshStandardMaterial({ color: c });
+                        const mat2 = new THREE.MeshStandardMaterial({ color: c2 });
+                        materials = [mat1, mat1, mat1, mat1, mat1, mat2];
+                    } else {
+                        materials = new THREE.MeshStandardMaterial({ color: c });
+                    }
+
+                    const wall = new THREE.Mesh(geo, materials);
 
                     wall.position.set(x1 + dx / 2, elevation3d + yOff + h / 2, z1 + dz / 2);
                     wall.rotation.y = -angle;
@@ -4967,103 +5082,54 @@
                     wallRegistry.add(p1);
                 }
 
-                // Boundary Walls for this floor
-                const bThick = 4;
-                const bColor = 0x1e293b;
-                add3DWall(-fW3d / 2, -fH3d / 2, fW3d / 2, -fH3d / 2, floorHeight3d, bThick, bColor);
-                add3DWall(-fW3d / 2, fH3d / 2, fW3d / 2, fH3d / 2, floorHeight3d, bThick, bColor);
-                add3DWall(-fW3d / 2, -fH3d / 2, -fW3d / 2, fH3d / 2, floorHeight3d, bThick, bColor);
-                add3DWall(fW3d / 2, -fH3d / 2, fW3d / 2, fH3d / 2, floorHeight3d, bThick, bColor);
-
-                // Rooms
-                floor.rooms.forEach(room => {
-                    const start = pxTo3d(room.x, room.y);
-                    const rW3d = room.length * unit;
-                    const rH3d = room.breadth * unit;
-
-                    // Room Floor Color
-                    const rGeo = new THREE.PlaneGeometry(rW3d, rH3d);
-                    const rMat = new THREE.MeshStandardMaterial({ color: room.color, transparent: true, opacity: 0.3 });
-                    const rMesh = new THREE.Mesh(rGeo, rMat);
-                    rMesh.rotation.x = -Math.PI / 2;
-                    rMesh.position.set(start.x + rW3d / 2, elevation3d + 1, start.z + rH3d / 2);
-                    scene3D.add(rMesh);
-
-                    // Room Walls
-                    const rwH = floorHeight3d;
-                    const rwT = 3;
-                    add3DWall(start.x, start.z, start.x + rW3d, start.z, rwH, rwT, room.color);
-                    add3DWall(start.x, start.z + rH3d, start.x + rW3d, start.z + rH3d, rwH, rwT, room.color);
-                    add3DWall(start.x, start.z, start.x, start.z + rH3d, rwH, rwT, room.color);
-                    add3DWall(start.x + rW3d, start.z, start.x + rW3d, start.z + rH3d, rwH, rwT, room.color);
-
-                    // Indoor Light
-                    const indoorLight = new THREE.PointLight(0xfff4e0, 0.4, 300);
-                    indoorLight.position.set(start.x + rW3d / 2, elevation3d + floorHeight3d * 0.8, start.z + rH3d / 2);
-                    scene3D.add(indoorLight);
-                });
-
-                // Elements
+                // 1. Elements (Manual Walls, Doors, Windows) - Process FIRST to claim painted colors
                 floor.elements.forEach(el => {
                     if (el.type === 'wall' || el.type === 'door' || el.type === 'window') {
                         const p1 = pxTo3d(el.x1, el.y1);
                         const p2 = pxTo3d(el.x2, el.y2);
                         const thick = (el.thickness || 6) * (unit / 15);
-                        let color = el.color || 0x475569;
+                        let color = el.color || '#475569';
 
                         if (el.type === 'door') {
-                            // Professional Door: Lintel Wall + Wooden Frame + Animated Leaf
                             const doorH = floorHeight3d * 0.72;
                             const lintelH = floorHeight3d - doorH;
                             const doorW = Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.z - p1.z, 2));
                             const doorAngle = Math.atan2(p2.z - p1.z, p2.x - p1.x);
 
-                            // 1. LINTEL (The Wall Part Above)
-                            // Use the same color as the wall to make it blend with the wall
-                            add3DWall(p1.x, p1.z, p2.x, p2.z, lintelH, thick, color, doorH);
+                            add3DWall(p1.x, p1.z, p2.x, p2.z, lintelH, thick, color, doorH, el.color2);
 
-                            // 2. DOOR FRAME (Distinct from the wall)
                             const frameGroup = new THREE.Group();
                             frameGroup.position.set(p1.x, elevation3d, p1.z);
                             frameGroup.rotation.y = -doorAngle;
                             scene3D.add(frameGroup);
 
-                            const frameMat = new THREE.MeshStandardMaterial({ color: 0x3d2b1f }); // Dark Chocolate Brown
+                            const frameMat = new THREE.MeshStandardMaterial({ color: 0x3d2b1f });
                             const sidePostGeo = new THREE.BoxGeometry(2, doorH, thick + 2);
 
-                            // Left Post
                             const postL = new THREE.Mesh(sidePostGeo, frameMat);
                             postL.position.set(0, doorH / 2, 0);
                             frameGroup.add(postL);
 
-                            // Right Post
                             const postR = new THREE.Mesh(sidePostGeo, frameMat);
                             postR.position.set(doorW, doorH / 2, 0);
                             frameGroup.add(postR);
 
-                            // Top Header Frame
                             const headerGeo = new THREE.BoxGeometry(doorW, 2, thick + 2);
                             const topFrame = new THREE.Mesh(headerGeo, frameMat);
                             topFrame.position.set(doorW / 2, doorH, 0);
                             frameGroup.add(topFrame);
 
-                            // 3. ANIMATED DOOR LEAF
                             const doorPivot = new THREE.Group();
-                            doorPivot.position.set(1, 0, 0); // Offset by frame thickness
+                            doorPivot.position.set(1, 0, 0);
                             frameGroup.add(doorPivot);
 
                             const leafGeo = new THREE.BoxGeometry(doorW - 4, doorH - 2, 3);
-                            const leafMat = new THREE.MeshStandardMaterial({
-                                color: 0x8d6e63, // Lighter Wood
-                                metalness: 0.1,
-                                roughness: 0.8
-                            });
+                            const leafMat = new THREE.MeshStandardMaterial({ color: 0x8d6e63, metalness: 0.1, roughness: 0.8 });
                             const leaf = new THREE.Mesh(leafGeo, leafMat);
                             leaf.position.set((doorW - 4) / 2, doorH / 2, 0);
                             leaf.castShadow = true;
                             doorPivot.add(leaf);
 
-                            // Metallic handle
                             const handleGeo = new THREE.SphereGeometry(1.5, 12, 12);
                             const handleMat = new THREE.MeshStandardMaterial({ color: 0xc0c0c0, metalness: 0.9, roughness: 0.1 });
                             const handle = new THREE.Mesh(handleGeo, handleMat);
@@ -5071,9 +5137,7 @@
                             doorPivot.add(handle);
 
                             animatedElements.push({ type: 'door', pivot: doorPivot, originalAngle: -doorAngle });
-
                         } else if (el.type === 'window') {
-                            // Realistic Window: Frame + Glass
                             const sillH = floorHeight3d * 0.35;
                             const winH = floorHeight3d * 0.35;
                             const headH = floorHeight3d * 0.7;
@@ -5081,39 +5145,28 @@
                             const dist = Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.z - p1.z, 2));
                             const ang = Math.atan2(p2.z - p1.z, p2.x - p1.x);
 
-                            // Bottom and Top wall parts
-                            add3DWall(p1.x, p1.z, p2.x, p2.z, sillH, thick, color, 0);
-                            add3DWall(p1.x, p1.z, p2.x, p2.z, lintelH, thick, color, headH);
+                            add3DWall(p1.x, p1.z, p2.x, p2.z, sillH, thick, color, 0, el.color2);
+                            add3DWall(p1.x, p1.z, p2.x, p2.z, lintelH, thick, color, headH, el.color2);
 
-                            // Glass Pane
                             const glassGeo = new THREE.BoxGeometry(dist, winH, 1);
-                            const glassMat = new THREE.MeshStandardMaterial({
-                                color: 0xdef3f6,
-                                transparent: true,
-                                opacity: 0.4,
-                                metalness: 0.1,
-                                roughness: 0.05
-                            });
+                            const glassMat = new THREE.MeshStandardMaterial({ color: 0xdef3f6, transparent: true, opacity: 0.4, metalness: 0.1, roughness: 0.05 });
                             const glass = new THREE.Mesh(glassGeo, glassMat);
                             glass.position.set((p1.x + p2.x) / 2, elevation3d + sillH + winH / 2, (p1.z + p2.z) / 2);
                             glass.rotation.y = -ang;
                             scene3D.add(glass);
 
-                            // Simple frame borders
                             const frameMat = new THREE.MeshStandardMaterial({ color: 0x1e293b });
                             const frameH = new THREE.Mesh(new THREE.BoxGeometry(dist, 2, thick + 1), frameMat);
                             frameH.position.set((p1.x + p2.x) / 2, elevation3d + sillH, (p1.z + p2.z) / 2);
                             frameH.rotation.y = -ang;
                             scene3D.add(frameH);
-
                         } else {
-                            add3DWall(p1.x, p1.z, p2.x, p2.z, floorHeight3d, thick, color);
+                            add3DWall(p1.x, p1.z, p2.x, p2.z, floorHeight3d, thick, color, 0, el.color2);
                         }
                     } else if (el.type === 'symbol') {
                         const center = pxTo3d(el.x, el.y);
                         const config = symbols[el.symbolType];
                         if (config?.isStair) {
-                            // Stair logic needs height adjustment
                             create3DStairs_Adjusted(center, el, config, unit, elevation3d, floorHeight3d);
                         } else {
                             const sprite = createEmojiSprite(config?.emoji || '🪑', 40);
@@ -5121,6 +5174,31 @@
                             scene3D.add(sprite);
                         }
                     }
+                });
+
+                // 2. Rooms (Outline Fill) - Only fills gaps not covered by elements
+                floor.rooms.forEach(room => {
+                    const start = pxTo3d(room.x, room.y);
+                    const rW3d = room.length * unit;
+                    const rH3d = room.breadth * unit;
+
+                    const rGeo = new THREE.PlaneGeometry(rW3d, rH3d);
+                    const rMat = new THREE.MeshStandardMaterial({ color: room.color, transparent: true, opacity: 0.3 });
+                    const rMesh = new THREE.Mesh(rGeo, rMat);
+                    rMesh.rotation.x = -Math.PI / 2;
+                    rMesh.position.set(start.x + rW3d / 2, elevation3d + 1, start.z + rH3d / 2);
+                    scene3D.add(rMesh);
+
+                    const rwH = floorHeight3d;
+                    const rwT = 3;
+                    add3DWall(start.x, start.z, start.x + rW3d, start.z, rwH, rwT, room.color, 0, room.color);
+                    add3DWall(start.x, start.z + rH3d, start.x + rW3d, start.z + rH3d, rwH, rwT, room.color, 0, room.color);
+                    add3DWall(start.x, start.z, start.x, start.z + rH3d, rwH, rwT, room.color, 0, room.color);
+                    add3DWall(start.x + rW3d, start.z, start.x + rW3d, start.z + rH3d, rwH, rwT, room.color, 0, room.color);
+
+                    const indoorLight = new THREE.PointLight(0xfff4e0, 0.4, 300);
+                    indoorLight.position.set(start.x + rW3d / 2, elevation3d + floorHeight3d * 0.8, start.z + rH3d / 2);
+                    scene3D.add(indoorLight);
                 });
             });
 
