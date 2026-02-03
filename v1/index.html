@@ -8,6 +8,8 @@
     <link
         href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Playfair+Display:wght@700&display=swap"
         rel="stylesheet">
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
     <!-- Three.js for 3D View -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -1156,83 +1158,206 @@
                         </div>
                     </div>
                 </div>
+                <!-- Furniture & Fixtures -->
                 <div class="sidebar-section">
                     <div class="sidebar-title">
                         <span>🪑</span> Furniture & Fixtures
                     </div>
-                    <div class="symbol-item" draggable="true" ondragstart="dragSymbol(event, 'compass')"
-                        onclick="pickItem('compass')">
-                        <span class="symbol-icon">🧭</span>
-                        <div class="symbol-info">
-                            <div class="symbol-name">Compass</div>
-                            <div class="symbol-size">Orientation</div>
+
+                    <!-- Category Selector -->
+                    <select id="furnitureCategorySelect" class="form-select"
+                        onchange="filterFurnitureCategory(this.value)" style="margin-bottom: 12px; font-size: 13px;">
+                        <option value="all">All Items</option>
+                        <option value="hall">Living / Hall</option>
+                        <option value="kitchen">Kitchen</option>
+                        <option value="bedroom">Master Bedroom</option>
+                        <option value="bathroom">Bathroom</option>
+                        <option value="veranda">Veranda / Outdoor</option>
+                    </select>
+
+                    <div id="furnitureContainer" style="max-height: 400px; overflow-y: auto;">
+                        <!-- Items will be visible based on category class -->
+
+                        <!-- HALL / LIVING ROOM -->
+                        <div class="symbol-item category-hall" draggable="true" ondragstart="dragSymbol(event, 'sofa')"
+                            onclick="pickItem('sofa')">
+                            <span class="symbol-icon material-symbols-outlined">chair</span>
+                            <div class="symbol-info">
+                                <div class="symbol-name">Sofa Set</div>
+                                <div class="symbol-size">3-Seater + 1</div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="symbol-item" draggable="true" ondragstart="dragSymbol(event, 'bed')"
-                        onclick="pickItem('bed')">
-                        <span class="symbol-icon">🛏️</span>
-                        <div class="symbol-info">
-                            <div class="symbol-name">Bed</div>
-                            <div class="symbol-size">Queen Size</div>
+                        <div class="symbol-item category-hall" draggable="true"
+                            ondragstart="dragSymbol(event, 'tv_unit')" onclick="pickItem('tv_unit')">
+                            <span class="symbol-icon material-symbols-outlined">tv</span>
+                            <div class="symbol-info">
+                                <div class="symbol-name">TV Unit</div>
+                                <div class="symbol-size">Entertainment</div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="symbol-item" draggable="true" ondragstart="dragSymbol(event, 'sofa')"
-                        onclick="pickItem('sofa')">
-                        <span class="symbol-icon">🛋️</span>
-                        <div class="symbol-info">
-                            <div class="symbol-name">Sofa</div>
-                            <div class="symbol-size">3-Seater</div>
+                        <div class="symbol-item category-hall" draggable="true" ondragstart="dragSymbol(event, 'table')"
+                            onclick="pickItem('table')">
+                            <span class="symbol-icon material-symbols-outlined">table_restaurant</span>
+                            <div class="symbol-info">
+                                <div class="symbol-name">Coffee Table</div>
+                                <div class="symbol-size">Center</div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="symbol-item" draggable="true" ondragstart="dragSymbol(event, 'table')"
-                        onclick="pickItem('table')">
-                        <span class="symbol-icon">🪑</span>
-                        <div class="symbol-info">
-                            <div class="symbol-name">Dining Table</div>
-                            <div class="symbol-size">6-Person</div>
+                        <div class="symbol-item category-hall category-bedroom" draggable="true"
+                            ondragstart="dragSymbol(event, 'carpet')" onclick="pickItem('carpet')">
+                            <span class="symbol-icon material-symbols-outlined">check_box_outline_blank</span>
+                            <div class="symbol-info">
+                                <div class="symbol-name">Rug / Carpet</div>
+                                <div class="symbol-size">6x4 ft</div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="symbol-item" draggable="true" ondragstart="dragSymbol(event, 'toilet')"
-                        onclick="pickItem('toilet')">
-                        <span class="symbol-icon">🚽</span>
-                        <div class="symbol-info">
-                            <div class="symbol-name">Toilet</div>
-                            <div class="symbol-size">Standard</div>
+
+                        <!-- KITCHEN -->
+                        <div class="symbol-item category-kitchen" draggable="true"
+                            ondragstart="dragSymbol(event, 'stove')" onclick="pickItem('stove')">
+                            <span class="symbol-icon material-symbols-outlined">skillet</span>
+                            <div class="symbol-info">
+                                <div class="symbol-name">Gas Stove</div>
+                                <div class="symbol-size">4-Burner</div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="symbol-item" draggable="true" ondragstart="dragSymbol(event, 'sink')"
-                        onclick="pickItem('sink')">
-                        <span class="symbol-icon">🚿</span>
-                        <div class="symbol-info">
-                            <div class="symbol-name">Sink</div>
-                            <div class="symbol-size">Bathroom</div>
+                        <div class="symbol-item category-kitchen" draggable="true"
+                            ondragstart="dragSymbol(event, 'sink')" onclick="pickItem('sink')">
+                            <span class="symbol-icon material-symbols-outlined">water_damage</span>
+                            <div class="symbol-info">
+                                <div class="symbol-name">Kitchen Sink</div>
+                                <div class="symbol-size">Double Bowl</div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="symbol-item" draggable="true" ondragstart="dragSymbol(event, 'stove')"
-                        onclick="pickItem('stove')">
-                        <span class="symbol-icon">🔥</span>
-                        <div class="symbol-info">
-                            <div class="symbol-name">Stove</div>
-                            <div class="symbol-size">4-Burner</div>
+                        <div class="symbol-item category-kitchen" draggable="true"
+                            ondragstart="dragSymbol(event, 'fridge')" onclick="pickItem('fridge')">
+                            <span class="symbol-icon material-symbols-outlined">kitchen</span>
+                            <div class="symbol-info">
+                                <div class="symbol-name">Refrigerator</div>
+                                <div class="symbol-size">Double Door</div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="symbol-item" draggable="true" ondragstart="dragSymbol(event, 'fridge')"
-                        onclick="pickItem('fridge')">
-                        <span class="symbol-icon">🧊</span>
-                        <div class="symbol-info">
-                            <div class="symbol-name">Refrigerator</div>
-                            <div class="symbol-size">Double Door</div>
+                        <div class="symbol-item category-kitchen" draggable="true"
+                            ondragstart="dragSymbol(event, 'cabinet')" onclick="pickItem('cabinet')">
+                            <span class="symbol-icon material-symbols-outlined">inventory_2</span>
+                            <div class="symbol-info">
+                                <div class="symbol-name">Cabinet</div>
+                                <div class="symbol-size">Storage</div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="symbol-item" draggable="true" ondragstart="dragSymbol(event, 'plant')"
-                        onclick="pickItem('plant')">
-                        <span class="symbol-icon">🪴</span>
-                        <div class="symbol-info">
-                            <div class="symbol-name">Plant</div>
-                            <div class="symbol-size">Decorative</div>
+                        <div class="symbol-item category-kitchen" draggable="true"
+                            ondragstart="dragSymbol(event, 'dining_table')" onclick="pickItem('dining_table')">
+                            <span class="symbol-icon material-symbols-outlined">table_bar</span>
+                            <div class="symbol-info">
+                                <div class="symbol-name">Dining Table</div>
+                                <div class="symbol-size">6-Seater</div>
+                            </div>
+                        </div>
+
+                        <!-- MASTER BEDROOM -->
+                        <div class="symbol-item category-bedroom" draggable="true"
+                            ondragstart="dragSymbol(event, 'bed')" onclick="pickItem('bed')">
+                            <span class="symbol-icon material-symbols-outlined">bed</span>
+                            <div class="symbol-info">
+                                <div class="symbol-name">King Bed</div>
+                                <div class="symbol-size">72x78 inch</div>
+                            </div>
+                        </div>
+                        <div class="symbol-item category-bedroom" draggable="true"
+                            ondragstart="dragSymbol(event, 'bed_single')" onclick="pickItem('bed_single')">
+                            <span class="symbol-icon material-symbols-outlined">single_bed</span>
+                            <div class="symbol-info">
+                                <div class="symbol-name">Single Bed</div>
+                                <div class="symbol-size">36x78 inch</div>
+                            </div>
+                        </div>
+                        <div class="symbol-item category-bedroom" draggable="true"
+                            ondragstart="dragSymbol(event, 'wardrobe')" onclick="pickItem('wardrobe')">
+                            <span class="symbol-icon material-symbols-outlined">door_sliding</span>
+                            <div class="symbol-info">
+                                <div class="symbol-name">Wardrobe</div>
+                                <div class="symbol-size">Large Storage</div>
+                            </div>
+                        </div>
+                        <div class="symbol-item category-bedroom" draggable="true"
+                            ondragstart="dragSymbol(event, 'lamp')" onclick="pickItem('lamp')">
+                            <span class="symbol-icon material-symbols-outlined">lamp</span>
+                            <div class="symbol-info">
+                                <div class="symbol-name">Lamp Stand</div>
+                                <div class="symbol-size">Corner</div>
+                            </div>
+                        </div>
+
+                        <!-- BATHROOM -->
+                        <div class="symbol-item category-bathroom" draggable="true"
+                            ondragstart="dragSymbol(event, 'toilet')" onclick="pickItem('toilet')">
+                            <span class="symbol-icon material-symbols-outlined">wc</span>
+                            <div class="symbol-info">
+                                <div class="symbol-name">WC / Commode</div>
+                                <div class="symbol-size">Western</div>
+                            </div>
+                        </div>
+                        <div class="symbol-item category-bathroom" draggable="true"
+                            ondragstart="dragSymbol(event, 'washbasin')" onclick="pickItem('washbasin')">
+                            <span class="symbol-icon material-symbols-outlined">wash</span>
+                            <div class="symbol-info">
+                                <div class="symbol-name">Wash Basin</div>
+                                <div class="symbol-size">Ceramic</div>
+                            </div>
+                        </div>
+                        <div class="symbol-item category-bathroom" draggable="true"
+                            ondragstart="dragSymbol(event, 'bathtub')" onclick="pickItem('bathtub')">
+                            <span class="symbol-icon material-symbols-outlined">bathtub</span>
+                            <div class="symbol-info">
+                                <div class="symbol-name">Bathtub</div>
+                                <div class="symbol-size">Standard</div>
+                            </div>
+                        </div>
+                        <div class="symbol-item category-bathroom" draggable="true"
+                            ondragstart="dragSymbol(event, 'shower')" onclick="pickItem('shower')">
+                            <span class="symbol-icon material-symbols-outlined">shower</span>
+                            <div class="symbol-info">
+                                <div class="symbol-name">Shower Area</div>
+                                <div class="symbol-size">Cubicle</div>
+                            </div>
+                        </div>
+
+                        <!-- VERANDA / OUTDOOR -->
+                        <div class="symbol-item category-veranda" draggable="true"
+                            ondragstart="dragSymbol(event, 'plant')" onclick="pickItem('plant')">
+                            <span class="symbol-icon material-symbols-outlined">potted_plant</span>
+                            <div class="symbol-info">
+                                <div class="symbol-name">Potted Plant</div>
+                                <div class="symbol-size">Large</div>
+                            </div>
+                        </div>
+                        <div class="symbol-item category-veranda" draggable="true"
+                            ondragstart="dragSymbol(event, 'bench')" onclick="pickItem('bench')">
+                            <span class="symbol-icon material-symbols-outlined">chair_alt</span>
+                            <div class="symbol-info">
+                                <div class="symbol-name">Garden Bench</div>
+                                <div class="symbol-size">Wood/Iron</div>
+                            </div>
+                        </div>
+                        <div class="symbol-item category-veranda" draggable="true"
+                            ondragstart="dragSymbol(event, 'swing')" onclick="pickItem('swing')">
+                            <span class="symbol-icon material-symbols-outlined">toys</span>
+                            <div class="symbol-info">
+                                <div class="symbol-name">Swing</div>
+                                <div class="symbol-size">Porch</div>
+                            </div>
+                        </div>
+                        <div class="symbol-item category-veranda" draggable="true"
+                            ondragstart="dragSymbol(event, 'compass')" onclick="pickItem('compass')">
+                            <span class="symbol-icon">🧭</span>
+                            <div class="symbol-info">
+                                <div class="symbol-name">Compass</div>
+                                <div class="symbol-size">North</div>
+                            </div>
                         </div>
                     </div>
                 </div>
+
 
                 <!-- Properties Panel (Merged for mobile) -->
                 <div id="mobileProperties" class="sidebar-section">
@@ -1741,6 +1866,22 @@
         let startX, startY;
         let elements = []; // This will be synced with active floor
         let gridSnap = 15;
+
+        // Furniture Filter Logic
+        function filterFurnitureCategory(category) {
+            const items = document.querySelectorAll('#furnitureContainer .symbol-item');
+            items.forEach(item => {
+                if (category === 'all') {
+                    item.style.display = 'flex';
+                } else {
+                    if (item.classList.contains(`category-${category}`)) {
+                        item.style.display = 'flex';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                }
+            });
+        }
 
         // ... [Existing code matches until exportDesign] ...
 
@@ -2420,16 +2561,40 @@
         };
 
         // Symbol/Furniture definitions
+        // using Material Symbols Outlined
         const symbols = {
-            compass: { isCompass: true, width: 60, height: 60, emoji: '🧭' },
-            bed: { emoji: '🛏️', width: 80, height: 60 },
-            sofa: { emoji: '🛋️', width: 90, height: 40 },
-            table: { emoji: '🪑', width: 70, height: 70 },
-            toilet: { emoji: '🚽', width: 30, height: 40 },
-            sink: { emoji: '🚿', width: 40, height: 30 },
-            stove: { emoji: '🔥', width: 30, height: 30 },
-            fridge: { emoji: '🧊', width: 35, height: 35 },
-            plant: { emoji: '🪴', width: 25, height: 25 },
+            compass: { isCompass: true, width: 60, height: 60 },
+            // Hall
+            sofa: { icon: 'chair', width: 60, height: 60, label: 'Sofa' }, // chair maps to a sofa-ish icon or similar
+            tv_unit: { icon: 'tv', width: 80, height: 30, label: 'TV' },
+            table: { icon: 'table_restaurant', width: 60, height: 60, label: 'Table' },
+            carpet: { icon: 'check_box_outline_blank', width: 100, height: 70, label: 'Rug' }, // Generic placeholder
+
+            // Kitchen
+            stove: { icon: 'skillet', width: 40, height: 40, label: 'Stove' }, // or 'stove' if available, 'outdoor_grill'
+            sink: { icon: 'water_damage', width: 40, height: 40, label: 'Sink' }, // 'water_damage' looks like splash
+            fridge: { icon: 'kitchen', width: 40, height: 60, label: 'Ref' },
+            cabinet: { icon: 'inventory_2', width: 40, height: 40, label: 'Cab' },
+            dining_table: { icon: 'table_bar', width: 80, height: 80, label: 'Dining' },
+
+            // Bedroom
+            bed: { icon: 'bed', width: 80, height: 80, label: '' },
+            bed_single: { icon: 'single_bed', width: 50, height: 80, label: '' },
+            wardrobe: { icon: 'door_sliding', width: 80, height: 30, label: 'Wardrobe' },
+            lamp: { icon: 'lamp', width: 30, height: 30, label: '' },
+
+            // Bathroom
+            toilet: { icon: 'wc', width: 40, height: 40, label: '' }, // 'wc' is standard
+            washbasin: { icon: 'wash', width: 40, height: 30, label: 'Basin' },
+            bathtub: { icon: 'bathtub', width: 80, height: 40, label: '' },
+            shower: { icon: 'shower', width: 40, height: 40, label: '' },
+
+            // Veranda
+            plant: { icon: 'potted_plant', width: 30, height: 30, label: '' },
+            bench: { icon: 'chair_alt', width: 80, height: 30, label: 'Bench' },
+            swing: { icon: 'toys', width: 60, height: 30, label: 'Swing' }, // 'toys' or similar
+
+            // Stairs
             stair_straight: { isStair: true, stairType: 'straight', width: 3, length: 10, steps: 10 },
             stair_lshape: { isStair: true, stairType: 'lshape', width: 3, length: 6, breadth: 6, steps: 12 },
             stair_spiral: { isStair: true, stairType: 'spiral', radius: 3, steps: 12 }
@@ -2807,6 +2972,8 @@
                 elements.push({ type: 'wall', x1: x, y1: y, x2: x, y2: y + height, color: boundaryColor, thickness: boundaryThick, isBoundary: true }); // West
                 elements.push({ type: 'wall', x1: x + width, y1: y, x2: x + width, y2: y + height, color: boundaryColor, thickness: boundaryThick, isBoundary: true }); // East
             }
+
+
 
             // Hide welcome screen
             document.getElementById('welcomeScreen').style.display = 'none';
@@ -4258,10 +4425,88 @@
                 return;
             }
 
-            ctx.font = `${symbol.height || 30}px Arial`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(symbol.emoji, 0, 0); // Draw at (0,0) after translation/rotation
+            // Draw Architectural Blocks (Black Border, White/Empty Fill)
+            ctx.strokeStyle = '#000000'; // Black Border
+            ctx.lineWidth = 1; // Thinner for icons
+            ctx.fillStyle = '#000000'; // Black Fill for Text/Icons
+
+            // Common dimensions
+            const w = (symbol.width || 40) * currentScale;
+            const h = (symbol.height || 40) * currentScale;
+
+            if (symbol.icon) {
+                // Use Material Symbols
+                // Font size should fit the height
+                const fontSize = Math.min(w, h);
+                ctx.font = `${fontSize}px "Material Symbols Outlined"`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(symbol.icon, 0, 0);
+
+                // Optional: Draw Label below or small if needed
+                if (symbol.label) {
+                    ctx.font = '10px Arial';
+                    ctx.fillStyle = '#000000';
+                    ctx.fillText(symbol.label, 0, h / 2 + 10);
+                }
+            } else if (symbol.isShape) {
+                ctx.beginPath();
+                if (symbol.dash) ctx.setLineDash(symbol.dash);
+
+                if (symbol.shape === 'rect') {
+                    ctx.rect(-w / 2, -h / 2, w, h);
+                } else if (symbol.shape === 'circle') {
+                    ctx.arc(0, 0, w / 2, 0, Math.PI * 2);
+                } else if (symbol.shape === 'oval') {
+                    ctx.ellipse(0, 0, w / 2, h / 2, 0, 0, Math.PI * 2);
+                } else if (symbol.shape === 'bed') {
+                    // Draw Bed Frame
+                    ctx.rect(-w / 2, -h / 2, w, h);
+                    ctx.stroke(); // Draw frame first
+
+                    // Draw Pillows
+                    ctx.beginPath();
+                    const pw = w * 0.35;
+                    const ph = h * 0.2;
+                    ctx.rect(-w / 2 + 5, -h / 2 + 5, pw, ph); // Left Pillow
+                    ctx.rect(w / 2 - pw - 5, -h / 2 + 5, pw, ph); // Right Pillow
+
+                    // Draw Sheet Fold
+                    ctx.moveTo(-w / 2, -h / 2 + h * 0.35);
+                    ctx.lineTo(w / 2, -h / 2 + h * 0.35);
+                }
+
+                ctx.stroke();
+
+                // Cross for shower etc
+                if (symbol.cross) {
+                    ctx.beginPath();
+                    ctx.moveTo(-w / 2, -h / 2);
+                    ctx.lineTo(w / 2, h / 2);
+                    ctx.moveTo(w / 2, -h / 2);
+                    ctx.lineTo(-w / 2, h / 2);
+                    ctx.stroke();
+                }
+
+                // Reset Dash
+                ctx.setLineDash([]);
+
+                // Draw Label
+                if (symbol.label) {
+                    ctx.font = '10px Arial';
+                    ctx.fillStyle = '#000000';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(symbol.label, 0, 0);
+                }
+            } else if (symbol.emoji) {
+                // Fallback to emoji if no shape defined
+                ctx.font = `${symbol.height || 30}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(symbol.emoji, 0, 0);
+            }
+
             ctx.restore();
         }
 
@@ -5082,97 +5327,243 @@
                     wallRegistry.add(p1);
                 }
 
-                // 1. Elements (Manual Walls, Doors, Windows) - Process FIRST to claim painted colors
+                // 1. Separate Elements
+                const walls = [];
+                const holes = [];
+                const symbolElements = [];
+
                 floor.elements.forEach(el => {
-                    if (el.type === 'wall' || el.type === 'door' || el.type === 'window') {
-                        const p1 = pxTo3d(el.x1, el.y1);
-                        const p2 = pxTo3d(el.x2, el.y2);
-                        const thick = (el.thickness || 6) * (unit / 15);
-                        let color = el.color || '#475569';
+                    if (el.type === 'wall') walls.push(el);
+                    else if (el.type === 'door' || el.type === 'window') holes.push(el);
+                    else if (el.type === 'symbol') symbolElements.push(el);
+                });
 
-                        if (el.type === 'door') {
-                            const doorH = floorHeight3d * 0.72;
-                            const lintelH = floorHeight3d - doorH;
-                            const doorW = Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.z - p1.z, 2));
-                            const doorAngle = Math.atan2(p2.z - p1.z, p2.x - p1.x);
+                // 2. Process Walls (Cut for openings)
+                walls.forEach(wall => {
+                    const wx = wall.x2 - wall.x1;
+                    const wy = wall.y2 - wall.y1;
+                    const wallLenSq = wx * wx + wy * wy;
+                    if (wallLenSq < 1) return; // Skip zero length
+                    const wallLen = Math.sqrt(wallLenSq);
 
-                            add3DWall(p1.x, p1.z, p2.x, p2.z, lintelH, thick, color, doorH, el.color2);
+                    const cuts = [];
 
-                            const frameGroup = new THREE.Group();
-                            frameGroup.position.set(p1.x, elevation3d, p1.z);
-                            frameGroup.rotation.y = -doorAngle;
-                            scene3D.add(frameGroup);
+                    holes.forEach(hole => {
+                        // Check collinearity and overlap
+                        const hmx = (hole.x1 + hole.x2) / 2;
+                        const hmy = (hole.y1 + hole.y2) / 2;
 
-                            const frameMat = new THREE.MeshStandardMaterial({ color: 0x3d2b1f });
-                            const sidePostGeo = new THREE.BoxGeometry(2, doorH, thick + 2);
+                        // Distance from hole center to wall line
+                        const cross = wx * (hmy - wall.y1) - wy * (hmx - wall.x1);
+                        const dist = Math.abs(cross) / wallLen;
 
-                            const postL = new THREE.Mesh(sidePostGeo, frameMat);
-                            postL.position.set(0, doorH / 2, 0);
-                            frameGroup.add(postL);
+                        if (dist > 15) return; // Not on wall (tolerance)
 
-                            const postR = new THREE.Mesh(sidePostGeo, frameMat);
-                            postR.position.set(doorW, doorH / 2, 0);
-                            frameGroup.add(postR);
+                        // Project hole onto wall vector
+                        const tStart = ((hole.x1 - wall.x1) * wx + (hole.y1 - wall.y1) * wy) / wallLenSq;
+                        const tEnd = ((hole.x2 - wall.x1) * wx + (hole.y2 - wall.y1) * wy) / wallLenSq;
 
-                            const headerGeo = new THREE.BoxGeometry(doorW, 2, thick + 2);
-                            const topFrame = new THREE.Mesh(headerGeo, frameMat);
-                            topFrame.position.set(doorW / 2, doorH, 0);
-                            frameGroup.add(topFrame);
+                        const t0 = Math.min(tStart, tEnd);
+                        const t1 = Math.max(tStart, tEnd);
 
-                            const doorPivot = new THREE.Group();
-                            doorPivot.position.set(1, 0, 0);
-                            frameGroup.add(doorPivot);
+                        // Overlap check
+                        if (t1 <= 0.01 || t0 >= 0.99) return;
 
-                            const leafGeo = new THREE.BoxGeometry(doorW - 4, doorH - 2, 3);
-                            const leafMat = new THREE.MeshStandardMaterial({ color: 0x8d6e63, metalness: 0.1, roughness: 0.8 });
-                            const leaf = new THREE.Mesh(leafGeo, leafMat);
-                            leaf.position.set((doorW - 4) / 2, doorH / 2, 0);
-                            leaf.castShadow = true;
-                            doorPivot.add(leaf);
+                        cuts.push({ start: Math.max(0, t0), end: Math.min(1, t1) });
 
-                            const handleGeo = new THREE.SphereGeometry(1.5, 12, 12);
-                            const handleMat = new THREE.MeshStandardMaterial({ color: 0xc0c0c0, metalness: 0.9, roughness: 0.1 });
-                            const handle = new THREE.Mesh(handleGeo, handleMat);
-                            handle.position.set(doorW - 12, doorH / 2, 3);
-                            doorPivot.add(handle);
+                        // Sync Props: Wall -> Hole (Ensure seamless look)
+                        if (wall.color) hole.color = wall.color;
+                        if (wall.color2) hole.color2 = wall.color2;
+                        if (wall.thickness) hole.thickness = wall.thickness;
+                    });
 
-                            animatedElements.push({ type: 'door', pivot: doorPivot, originalAngle: -doorAngle });
-                        } else if (el.type === 'window') {
-                            const sillH = floorHeight3d * 0.35;
-                            const winH = floorHeight3d * 0.35;
-                            const headH = floorHeight3d * 0.7;
-                            const lintelH = floorHeight3d - headH;
-                            const dist = Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.z - p1.z, 2));
-                            const ang = Math.atan2(p2.z - p1.z, p2.x - p1.x);
-
-                            add3DWall(p1.x, p1.z, p2.x, p2.z, sillH, thick, color, 0, el.color2);
-                            add3DWall(p1.x, p1.z, p2.x, p2.z, lintelH, thick, color, headH, el.color2);
-
-                            const glassGeo = new THREE.BoxGeometry(dist, winH, 1);
-                            const glassMat = new THREE.MeshStandardMaterial({ color: 0xdef3f6, transparent: true, opacity: 0.4, metalness: 0.1, roughness: 0.05 });
-                            const glass = new THREE.Mesh(glassGeo, glassMat);
-                            glass.position.set((p1.x + p2.x) / 2, elevation3d + sillH + winH / 2, (p1.z + p2.z) / 2);
-                            glass.rotation.y = -ang;
-                            scene3D.add(glass);
-
-                            const frameMat = new THREE.MeshStandardMaterial({ color: 0x1e293b });
-                            const frameH = new THREE.Mesh(new THREE.BoxGeometry(dist, 2, thick + 1), frameMat);
-                            frameH.position.set((p1.x + p2.x) / 2, elevation3d + sillH, (p1.z + p2.z) / 2);
-                            frameH.rotation.y = -ang;
-                            scene3D.add(frameH);
-                        } else {
-                            add3DWall(p1.x, p1.z, p2.x, p2.z, floorHeight3d, thick, color, 0, el.color2);
+                    // Sort and Merge Cuts
+                    cuts.sort((a, b) => a.start - b.start);
+                    const merged = [];
+                    if (cuts.length > 0) {
+                        let curr = cuts[0];
+                        for (let i = 1; i < cuts.length; i++) {
+                            if (cuts[i].start < curr.end + 0.01) { // Merge overlapping/touching
+                                curr.end = Math.max(curr.end, cuts[i].end);
+                            } else {
+                                merged.push(curr);
+                                curr = cuts[i];
+                            }
                         }
-                    } else if (el.type === 'symbol') {
-                        const center = pxTo3d(el.x, el.y);
-                        const config = symbols[el.symbolType];
-                        if (config?.isStair) {
-                            create3DStairs_Adjusted(center, el, config, unit, elevation3d, floorHeight3d);
-                        } else {
-                            const sprite = createEmojiSprite(config?.emoji || '🪑', 40);
-                            sprite.position.set(center.x, elevation3d + 20, center.z);
-                            scene3D.add(sprite);
-                        }
+                        merged.push(curr);
+                    }
+
+                    // Draw Wall Segments
+                    let currentT = 0;
+                    const drawSeg = (tA, tB) => {
+                        if (tB - tA < 0.01) return; // Skip tiny segments
+                        const sx1 = wall.x1 + wx * tA;
+                        const sy1 = wall.y1 + wy * tA;
+                        const sx2 = wall.x1 + wx * tB;
+                        const sy2 = wall.y1 + wy * tB;
+
+                        const p1 = pxTo3d(sx1, sy1);
+                        const p2 = pxTo3d(sx2, sy2);
+                        const thick = (wall.thickness || 6) * (unit / 15);
+
+                        add3DWall(p1.x, p1.z, p2.x, p2.z, floorHeight3d, thick, wall.color || '#475569', 0, wall.color2);
+                    };
+
+                    merged.forEach(cut => {
+                        drawSeg(currentT, cut.start);
+                        currentT = cut.end;
+                    });
+                    drawSeg(currentT, 1.0);
+                });
+
+                // 3. Render Holes (Doors/Windows)
+                holes.forEach(el => {
+                    const p1 = pxTo3d(el.x1, el.y1);
+                    const p2 = pxTo3d(el.x2, el.y2);
+                    const thick = (el.thickness || 6) * (unit / 15);
+                    let color = el.color || '#475569';
+
+                    if (el.type === 'door') {
+                        const doorH = floorHeight3d * 0.72;
+                        const lintelH = floorHeight3d - doorH;
+                        const doorW = Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.z - p1.z, 2));
+                        const doorAngle = Math.atan2(p2.z - p1.z, p2.x - p1.x);
+
+                        add3DWall(p1.x, p1.z, p2.x, p2.z, lintelH, thick, color, doorH, el.color2);
+
+                        const doorGroup = new THREE.Group();
+                        doorGroup.position.set(p1.x, elevation3d, p1.z);
+                        doorGroup.rotation.y = -doorAngle;
+                        scene3D.add(doorGroup);
+
+                        const frameColor = 0x3e2723;
+                        const frameMat = new THREE.MeshStandardMaterial({ color: frameColor, roughness: 0.8 });
+                        const frameThick = 2.5;
+                        const frameDepth = thick + 2;
+
+                        const jambL = new THREE.Mesh(new THREE.BoxGeometry(frameThick, doorH, frameDepth), frameMat);
+                        jambL.position.set(frameThick / 2, doorH / 2, 0);
+                        doorGroup.add(jambL);
+
+                        const jambR = new THREE.Mesh(new THREE.BoxGeometry(frameThick, doorH, frameDepth), frameMat);
+                        jambR.position.set(doorW - frameThick / 2, doorH / 2, 0);
+                        doorGroup.add(jambR);
+
+                        const header = new THREE.Mesh(new THREE.BoxGeometry(doorW, frameThick, frameDepth), frameMat);
+                        header.position.set(doorW / 2, doorH - frameThick / 2, 0);
+                        doorGroup.add(header);
+
+                        const doorPivot = new THREE.Group();
+                        doorPivot.position.set(frameThick, 0, 0);
+                        doorGroup.add(doorPivot);
+
+                        const leafW = doorW - (frameThick * 2);
+                        const leafH = doorH - frameThick;
+                        const leafD = 3;
+                        const leafMat = new THREE.MeshStandardMaterial({ color: 0x5d4037, roughness: 0.6 });
+                        const leaf = new THREE.Mesh(new THREE.BoxGeometry(leafW, leafH, leafD), leafMat);
+                        leaf.position.set(leafW / 2, leafH / 2, 0);
+                        leaf.castShadow = true;
+                        doorPivot.add(leaf);
+
+                        const panelGeo = new THREE.BoxGeometry(leafW * 0.7, leafH * 0.35, leafD + 1);
+                        const panelMat = new THREE.MeshStandardMaterial({ color: 0x4e342e });
+                        const topPanel = new THREE.Mesh(panelGeo, panelMat);
+                        topPanel.position.set(leafW / 2, leafH * 0.7, 0);
+                        doorPivot.add(topPanel);
+                        const botPanel = new THREE.Mesh(panelGeo, panelMat);
+                        botPanel.position.set(leafW / 2, leafH * 0.25, 0);
+                        doorPivot.add(botPanel);
+
+                        const knobGeo = new THREE.SphereGeometry(2, 16, 16);
+                        const knobMat = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.8, roughness: 0.2 });
+                        const knob = new THREE.Mesh(knobGeo, knobMat);
+                        knob.position.set(leafW - 6, leafH * 0.5, leafD / 2 + 1.5);
+                        doorPivot.add(knob);
+                        const knob2 = knob.clone();
+                        knob2.position.set(leafW - 6, leafH * 0.5, -leafD / 2 - 1.5);
+                        doorPivot.add(knob2);
+
+                        animatedElements.push({ type: 'door', pivot: doorPivot, originalAngle: -doorAngle });
+
+                    } else if (el.type === 'window') {
+                        const sillH = floorHeight3d * 0.3;
+                        const winH = floorHeight3d * 0.4;
+                        const headH = floorHeight3d * 0.7;
+                        const lintelH = floorHeight3d - headH;
+                        const dist = Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.z - p1.z, 2));
+                        const ang = Math.atan2(p2.z - p1.z, p2.x - p1.x);
+
+                        add3DWall(p1.x, p1.z, p2.x, p2.z, sillH, thick, color, 0, el.color2);
+                        add3DWall(p1.x, p1.z, p2.x, p2.z, lintelH, thick, color, headH, el.color2);
+
+                        const winGroup = new THREE.Group();
+                        winGroup.position.set(p1.x, elevation3d, p1.z);
+                        winGroup.rotation.y = -ang;
+                        scene3D.add(winGroup);
+
+                        const fColor = 0xffffff;
+                        const fMat = new THREE.MeshStandardMaterial({ color: fColor });
+                        const fThick = 2;
+                        const fDepth = thick + 2;
+
+                        const sill = new THREE.Mesh(new THREE.BoxGeometry(dist, fThick, fDepth + 2), fMat);
+                        sill.position.set(dist / 2, sillH + fThick / 2, 0);
+                        winGroup.add(sill);
+
+                        const header = new THREE.Mesh(new THREE.BoxGeometry(dist, fThick, fDepth), fMat);
+                        header.position.set(dist / 2, headH - fThick / 2, 0);
+                        winGroup.add(header);
+
+                        const leftJamb = new THREE.Mesh(new THREE.BoxGeometry(fThick, winH, fDepth), fMat);
+                        leftJamb.position.set(fThick / 2, sillH + winH / 2, 0);
+                        winGroup.add(leftJamb);
+
+                        const rightJamb = new THREE.Mesh(new THREE.BoxGeometry(fThick, winH, fDepth), fMat);
+                        rightJamb.position.set(dist - fThick / 2, sillH + winH / 2, 0);
+                        winGroup.add(rightJamb);
+
+                        const glassGeo = new THREE.BoxGeometry(dist - fThick * 2, winH - fThick * 2, 1);
+                        const glassMat = new THREE.MeshStandardMaterial({
+                            color: 0xa5f2f3, transparent: true, opacity: 0.3, metalness: 0.9, roughness: 0.0, side: THREE.DoubleSide
+                        });
+                        const glass = new THREE.Mesh(glassGeo, glassMat);
+                        glass.position.set(dist / 2, sillH + winH / 2, 0);
+                        winGroup.add(glass);
+
+                        const mullion = new THREE.Mesh(new THREE.BoxGeometry(fThick / 2, winH - fThick * 2, 2), fMat);
+                        mullion.position.set(dist / 2, sillH + winH / 2, 0);
+                        winGroup.add(mullion);
+
+                        const transom = new THREE.Mesh(new THREE.BoxGeometry(dist - fThick * 2, fThick / 2, 2), fMat);
+                        transom.position.set(dist / 2, sillH + winH * 0.75, 0);
+                        winGroup.add(transom);
+                    }
+                });
+
+                // 4. Render Interior Furniture
+                // Calculate Scale Factors for Element Sizing
+                const hw = floor.homeWall || project.floors[0].homeWall;
+                let scaleX = 1, scaleZ = 1;
+
+                // fW3d and fH3d are already calculated in the parent scope (floor loop)
+                if (hw && hw.width > 0 && hw.height > 0) {
+                    scaleX = fW3d / hw.width; // scaling factor for width
+                    scaleZ = fH3d / hw.height; // scaling factor for height/depth
+                }
+
+                symbolElements.forEach(el => {
+                    const center = pxTo3d(el.x, el.y);
+
+                    // Safety check for NaN in position
+                    if (isNaN(center.x) || isNaN(center.z)) return;
+
+                    const config = symbols[el.symbolType];
+
+                    if (config?.isStair) {
+                        create3DStairs_Adjusted(center, el, config, unit, elevation3d, floorHeight3d);
+                    } else {
+                        create3DFurniture(center, el, config, scaleX, scaleZ, elevation3d, scene3D);
                     }
                 });
 
@@ -5201,6 +5592,108 @@
                     scene3D.add(indoorLight);
                 });
             });
+
+            function getFurnitureHeight(type) {
+                // Returns height in feet (approx)
+                const types = {
+                    'wardrobe': 7, 'fridge': 6, 'door': 7, 'shower': 7,
+                    'cabinet': 3, 'stove': 3, 'sink': 3, 'washbasin': 3,
+                    'table': 2.5, 'dining_table': 2.5, 'sofa': 2.5, 'bench': 2,
+                    'bed': 2, 'bed_single': 2, 'toilet': 1.5, 'bathtub': 2,
+                    'tv_unit': 2, 'swing': 5, 'lamp': 5, 'plant': 3
+                };
+                return (types[type] || 1) * 15; // 15 units per ft
+            }
+
+            function create3DFurniture(center, el, config, scaleX, scaleZ, elevation, scene) {
+                const w = (el.width || config.width) * scaleX;
+                const d = (el.height || config.height) * scaleZ; // 2D height is 3D depth
+                const h = getFurnitureHeight(el.symbolType);
+                const rot = -(el.rotation || 0); // Radians? No, el.rotation is likely degrees if from 2D logic.
+                // Actually 2D rotation usually processed in radians in draw, but let's check. 
+                // The drawElement uses "element.rotation * Math.PI / 180". So it is degrees.
+                const angle = (el.rotation || 0) * Math.PI / 180;
+
+                const group = new THREE.Group();
+                group.position.set(center.x, elevation + h / 2, center.z);
+                group.rotation.y = -angle;
+
+                let mesh;
+                const matBody = new THREE.MeshStandardMaterial({ color: 0xffffff }); // White
+                const matIcon = createIconTextureMaterial(config.icon || config.label, w, d);
+
+                // Multi-material for Box: [Right, Left, Top, Bottom, Front, Back]
+                // We want Icon on TOP (index 2)
+                const materials = [
+                    matBody, matBody,
+                    matIcon, matBody,
+                    matBody, matBody
+                ];
+
+                if (config.shape === 'circle' || config.shape === 'oval' || config.shape === 'round') {
+                    // Cylinder
+                    const r = Math.min(w, d) / 2;
+                    const geo = new THREE.CylinderGeometry(r, r, h, 32);
+                    // Cylinder mapping is diverse, simpler to just put icon on a plane above it or use basic material
+                    // For cylinder, top face material index is 1 (side, top, bottom)? Check Threejs docs.
+                    // [side, top, bottom] for CylinderGeometry materials array?
+                    // Actually Cylinder uses [side, top, bottom]
+                    mesh = new THREE.Mesh(geo, [matBody, matIcon, matBody]);
+                } else {
+                    // Box (Rect, Bed, etc)
+                    const geo = new THREE.BoxGeometry(w, h, d);
+                    mesh = new THREE.Mesh(geo, materials);
+                }
+
+                mesh.castShadow = true;
+                mesh.receiveShadow = true;
+                group.add(mesh);
+
+                // Edges (Black Outline)
+                const edges = new THREE.EdgesGeometry(mesh.geometry);
+                const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x000000 }));
+                mesh.add(line);
+
+                scene.add(group);
+            }
+
+            function createIconTextureMaterial(icon, w, h) {
+                // Create a canvas texture for the top face
+                const canvas = document.createElement('canvas');
+                // Make resolution proportional to aspect ratio
+                const res = 128;
+                canvas.width = res;
+                canvas.height = res * (h / w);
+                // Ensure min height
+                if (canvas.height < 64) {
+                    canvas.height = 64;
+                    canvas.width = 64 * (w / h);
+                }
+
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, canvas.width, canvas.height); // White background
+
+                // Draw Border (optional, already have edges)
+
+                // Draw Icon
+                ctx.fillStyle = '#000000';
+                const fontSize = Math.min(canvas.width, canvas.height) * 0.8;
+                ctx.font = `${fontSize}px "Material Symbols Outlined"`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+
+                // If no icon, maybe label?
+                if (!icon || icon.length > 10) { // arbitrary check for label vs icon code
+                    ctx.font = `${fontSize * 0.4}px Arial`;
+                    ctx.fillText(icon || '?', canvas.width / 2, canvas.height / 2);
+                } else {
+                    ctx.fillText(icon, canvas.width / 2, canvas.height / 2);
+                }
+
+                const texture = new THREE.CanvasTexture(canvas);
+                return new THREE.MeshStandardMaterial({ map: texture });
+            }
 
             function create3DWall_Old(x1, z1, x2, z2, height, thickness, color) {
                 const dx = x2 - x1;
@@ -5280,15 +5773,21 @@
             animate3D();
         }
 
-        function createEmojiSprite(emoji, size) {
+        function createTextSprite(text, size, fontFamily = 'Arial') {
             const canvas = document.createElement('canvas');
             canvas.width = 128;
             canvas.height = 128;
             const ctx = canvas.getContext('2d');
-            ctx.font = '80px Arial';
+
+            // Background check for debugging transparency
+            // ctx.fillStyle = 'rgba(255,0,0,0.1)';
+            // ctx.fillRect(0,0,128,128);
+
+            ctx.font = `80px "${fontFamily}"`;
+            ctx.fillStyle = '#000000'; // Black Text
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText(emoji, 64, 64);
+            ctx.fillText(text, 64, 64);
 
             const texture = new THREE.CanvasTexture(canvas);
             const mat = new THREE.SpriteMaterial({ map: texture, transparent: true });
