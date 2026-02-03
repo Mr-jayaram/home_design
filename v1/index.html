@@ -1380,6 +1380,19 @@
                     </div>
                 </div>
 
+                <!-- Virtual Joystick (Mobile Walk Mode) -->
+                <div id="virtualJoystick"
+                    style="display: none; position: absolute; bottom: 50px; left: 50px; width: 120px; height: 120px; background: rgba(255, 255, 255, 0.2); border: 2px solid rgba(255, 255, 255, 0.5); border-radius: 50%; touch-action: none; z-index: 1000;">
+                    <div id="joystickKnob"
+                        style="position: absolute; left: 35px; top: 35px; width: 50px; height: 50px; background: rgba(255, 255, 255, 0.8); border-radius: 50%; pointer-events: none;">
+                    </div>
+                </div>
+                <!-- Look Area Hint -->
+                <div id="techLookHint"
+                    style="display: none; position: absolute; top: 50%; right: 50px; transform: translateY(-50%); color: rgba(255,255,255,0.7); font-size: 14px; pointer-events: none; z-index: 1000;">
+                    Swipe right side to look
+                </div>
+
                 <!-- Canvas Toolbar -->
                 <div class="canvas-toolbar">
                     <div class="toolbar-group">
@@ -1433,6 +1446,9 @@
                         </button>
                         <button class="three-control-btn" id="walkBtn" onclick="toggleWalkMode()">
                             <span class="icon">🚶</span> <span class="text">Walk Mode: OFF</span>
+                        </button>
+                        <button class="three-control-btn" id="tourBtn" onclick="toggleTour()">
+                            <span class="icon">🎬</span> <span class="text">Auto Tour</span>
                         </button>
                         <div class="walk-hint" id="walkHint" style="display: none;">
                             Use <b>Arrow Keys</b> to walk, <b>Wheel</b> to zoom, <b>Mouse</b> to look around
@@ -3164,16 +3180,20 @@
         }
 
         // Canvas Event Handlers
+        // Canvas Event Handlers
         function getMousePos(e) {
             const rect = canvas.getBoundingClientRect();
             let clientX, clientY;
+            let isTouch = false;
 
             if (e.touches && e.touches.length > 0) {
                 clientX = e.touches[0].clientX;
                 clientY = e.touches[0].clientY;
+                isTouch = true;
             } else if (e.changedTouches && e.changedTouches.length > 0) {
                 clientX = e.changedTouches[0].clientX;
                 clientY = e.changedTouches[0].clientY;
+                isTouch = true;
             } else {
                 clientX = e.clientX;
                 clientY = e.clientY;
@@ -3183,6 +3203,11 @@
             // rect.width/height is the visual size on screen (respecting CSS rotation)
             let x = clientX - rect.left;
             let y = clientY - rect.top;
+
+            // Apply Offset for Touch Drawing (so finger doesn't hide point)
+            if (isTouch && (currentTool === 'room' || currentTool === 'wall' || placingItemType)) {
+                y -= 60;
+            }
 
             // Handle rotation mapping back to logical canvas coordinates
             let logicalX, logicalY;
@@ -5098,29 +5123,136 @@
             }
         }
 
+        // Virtual Joystick Logic
+        const joystick = document.getElementById('virtualJoystick');
+        const knob = document.getElementById('joystickKnob');
+        let joystickActive = false;
+        let joystickOrigin = { x: 0, y: 0 };
+        let joystickVector = { x: 0, y: 0 };
+
+        joystick.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            joystickActive = true;
+            const touch = e.touches[0];
+            const rect = joystick.getBoundingClientRect();
+            joystickOrigin = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+            updateJoystick(touch.clientX, touch.clientY);
+        });
+
+        joystick.addEventListener('touchmove', (e) => {
+            if (!joystickActive) return;
+            e.preventDefault();
+            const touch = e.touches[0];
+            updateJoystick(touch.clientX, touch.clientY);
+        });
+
+        joystick.addEventListener('touchend', (e) => {
+            joystickActive = false;
+            joystickVector = { x: 0, y: 0 };
+            knob.style.transform = `translate(0px, 0px)`;
+            // Reset keys
+            walkKeys['ArrowUp'] = false;
+            walkKeys['ArrowDown'] = false;
+            walkKeys['ArrowLeft'] = false;
+            walkKeys['ArrowRight'] = false;
+        });
+
+        function updateJoystick(clientX, clientY) {
+            const maxDist = 35; // Max radius
+            let dx = clientX - joystickOrigin.x;
+            let dy = clientY - joystickOrigin.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+
+            if (dist > maxDist) {
+                const angle = Math.atan2(dy, dx);
+                dx = Math.cos(angle) * maxDist;
+                dy = Math.sin(angle) * maxDist;
+            }
+
+            knob.style.transform = `translate(${dx}px, ${dy}px)`;
+
+            // Map to keys
+            // Thresholds
+            const threshold = 10;
+            walkKeys['ArrowUp'] = dy < -threshold;
+            walkKeys['ArrowDown'] = dy > threshold;
+            walkKeys['ArrowLeft'] = dx < -threshold;
+            walkKeys['ArrowRight'] = dx > threshold;
+        }
+
+        // Touch Look (Right side of screen)
+        let walkLookX = 0, walkLookY = 0;
+        window.addEventListener('touchstart', (e) => {
+            if (!isWalkMode) return;
+            // Only tracking looking on right half if joystick is on left
+            if (e.touches[0].clientX > window.innerWidth / 2) {
+                walkLookX = e.touches[0].clientX;
+                walkLookY = e.touches[0].clientY;
+            }
+        });
+
+        window.addEventListener('touchmove', (e) => {
+            if (!isWalkMode) return;
+            // If touch is on joystick, ignore here (handled by joystick)
+            // But touchmove might fire for multiple touches
+            for (let i = 0; i < e.touches.length; i++) {
+                const t = e.touches[i];
+                if (t.target === joystick || t.target === knob) continue;
+
+                if (t.clientX > window.innerWidth / 2) {
+                    const dx = t.clientX - walkLookX;
+                    const dy = t.clientY - walkLookY;
+
+                    const sensitivity = 0.005;
+                    camera3D.rotateY(-dx * sensitivity);
+                    camera3D.rotation.order = 'YXZ';
+                    let newPitch = camera3D.rotation.x - dy * sensitivity;
+                    camera3D.rotation.x = Math.max(-Math.PI / 2.5, Math.min(Math.PI / 2.5, newPitch));
+                    camera3D.rotation.z = 0;
+
+                    walkLookX = t.clientX;
+                    walkLookY = t.clientY;
+                }
+            }
+        });
+
         function toggleWalkMode() {
             isWalkMode = !isWalkMode;
             const btn = document.getElementById('walkBtn');
             const hint = document.getElementById('walkHint');
+            const joystickEl = document.getElementById('virtualJoystick');
+            const lookHint = document.getElementById('techLookHint');
+
             btn.querySelector('.text').textContent = `Walk Mode: ${isWalkMode ? 'ON' : 'OFF'}`;
             btn.classList.toggle('active', isWalkMode);
             hint.style.display = isWalkMode ? 'block' : 'none';
+
+            // Check if mobile (simple check)
+            const isMobile = window.innerWidth < 768 || 'ontouchstart' in window;
 
             if (isWalkMode) {
                 controls3D.enabled = false;
                 camera3D.position.y = 5.5 * 15;
                 camera3D.lookAt(0, 5.5 * 15, 0);
 
-                renderer3D.domElement.requestPointerLock();
+                if (isMobile) {
+                    joystickEl.style.display = 'block';
+                    lookHint.style.display = 'block';
+                } else {
+                    renderer3D.domElement.requestPointerLock();
+                }
 
                 window.addEventListener('keydown', handleWalkKeydown);
                 window.addEventListener('keyup', handleWalkKeyup);
                 window.addEventListener('mousemove', handleWalkMouse);
                 window.addEventListener('wheel', handleWalkWheel, { passive: false });
-                showToast('🚶', 'Walk mode active! Arrow keys to move, Wheel to zoom.');
+                showToast('🚶', 'Walk mode active!');
             } else {
                 controls3D.enabled = true;
-                document.exitPointerLock();
+                if (document.pointerLockElement) document.exitPointerLock();
+                joystickEl.style.display = 'none';
+                lookHint.style.display = 'none';
+
                 window.removeEventListener('keydown', handleWalkKeydown);
                 window.removeEventListener('keyup', handleWalkKeyup);
                 window.removeEventListener('mousemove', handleWalkMouse);
@@ -5159,6 +5291,78 @@
             // Clamp FOV between 20 (zoomed in) and 90 (wide angle)
             camera3D.fov = Math.max(20, Math.min(90, camera3D.fov));
             camera3D.updateProjectionMatrix();
+        }
+
+        // --- 3D Tour Logic ---
+        let tourTargets = [];
+        let isTouring = false;
+        let tourIndex = 0;
+        let tourState = 0; // 0: moving, 1: rotating
+        let tourRotation = 0;
+
+        function toggleTour() {
+            isTouring = !isTouring;
+            const btn = document.getElementById('tourBtn');
+
+            if (isTouring) {
+                if (tourTargets.length === 0) {
+                    showToast('⚠️', 'No rooms found to tour!');
+                    isTouring = false;
+                    return;
+                }
+                btn.classList.add('active');
+                controls3D.enabled = false;
+
+                // Start at index 0
+                tourIndex = 0;
+                tourState = 0; // Moving
+                tourRotation = 0;
+                showToast('🎬', 'Starting Tour...');
+            } else {
+                btn.classList.remove('active');
+                controls3D.enabled = true;
+                showToast('⏹️', 'Tour Stopped');
+            }
+        }
+
+        function updateTour() {
+            if (!isTouring || tourTargets.length === 0) return;
+
+            const target = tourTargets[tourIndex];
+            const speed = 2.5;
+            const rotSpeed = 0.015;
+
+            if (tourState === 0) { // Moving
+                const dist = camera3D.position.distanceTo(target);
+                if (dist < 5) {
+                    tourState = 1; // Start Rotating
+                    tourRotation = 0;
+                } else {
+                    // Smooth move
+                    const dir = new THREE.Vector3().subVectors(target, camera3D.position).normalize();
+                    camera3D.position.add(dir.multiplyScalar(speed));
+
+                    // Look horizontally at target
+                    const lookT = target.clone();
+                    lookT.y = camera3D.position.y;
+                    camera3D.lookAt(lookT);
+                }
+            } else if (tourState === 1) { // Rotating
+                camera3D.rotation.y += rotSpeed;
+                tourRotation += rotSpeed;
+                if (tourRotation >= Math.PI * 2) {
+                    tourIndex++;
+                    if (tourIndex >= tourTargets.length) {
+                        // Loop? Or Stop? "show view all rooms" -> Stop after done.
+                        isTouring = false;
+                        controls3D.enabled = true;
+                        document.getElementById('tourBtn').classList.remove('active');
+                        showToast('✅', 'Tour Finished');
+                    } else {
+                        tourState = 0; // Move to next
+                    }
+                }
+            }
         }
 
         function updateWalkMotion() {
@@ -5231,11 +5435,24 @@
             container.appendChild(renderer3D.domElement);
 
             animatedElements = []; // Reset animations on init
+            tourTargets = []; // Reset tour targets
 
             // Controls
             controls3D = new THREE.OrbitControls(camera3D, renderer3D.domElement);
             controls3D.enableDamping = true;
             controls3D.dampingFactor = 0.05;
+
+            // Limit rotation to upper hemisphere (Top/Side view only, no bottom view)
+            controls3D.maxPolarAngle = Math.PI / 2;
+            controls3D.minPolarAngle = 0;
+
+            // Enable Panning (Right click drag)
+            controls3D.enablePan = true;
+            controls3D.screenSpacePanning = true;
+
+            // Zoom limits
+            controls3D.minDistance = 10;
+            controls3D.maxDistance = 5000;
 
             // Lighting
             const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
@@ -5573,6 +5790,9 @@
                     const rW3d = room.length * unit;
                     const rH3d = room.breadth * unit;
 
+                    // Capture Tour Target (Center of Room)
+                    tourTargets.push(new THREE.Vector3(start.x + rW3d / 2, elevation3d + (5.5 * 15), start.z + rH3d / 2));
+
                     const rGeo = new THREE.PlaneGeometry(rW3d, rH3d);
                     const rMat = new THREE.MeshStandardMaterial({ color: room.color, transparent: true, opacity: 0.3 });
                     const rMesh = new THREE.Mesh(rGeo, rMat);
@@ -5802,7 +6022,9 @@
                 if (!is3DMode) return;
                 requestAnimationFrame(loop);
 
-                if (isWalkMode) {
+                if (isTouring) {
+                    updateTour();
+                } else if (isWalkMode) {
                     updateWalkMotion();
                 } else if (controls3D) {
                     controls3D.update();
