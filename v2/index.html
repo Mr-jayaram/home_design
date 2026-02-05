@@ -1465,6 +1465,19 @@
                                 oninput="updateTourSpeed()" onpointerdown="event.stopPropagation()">
                         </div>
                     </div>
+                    <div class="sidebar-title" style="margin-top: 12px; font-size: 11px; opacity: 0.8;">
+                        <span>📸</span> Elevation Presets
+                    </div>
+                    <div class="tool-grid" style="grid-template-columns: 1fr 1fr; gap: 5px; padding: 0 12px 12px 12px;">
+                        <button class="btn btn-secondary" onclick="set3DView('top')"
+                            style="font-size: 10px; padding: 5px;">Top</button>
+                        <button class="btn btn-secondary" onclick="set3DView('front')"
+                            style="font-size: 10px; padding: 5px;">Front</button>
+                        <button class="btn btn-secondary" onclick="set3DView('side')"
+                            style="font-size: 10px; padding: 5px;">Side</button>
+                        <button class="btn btn-secondary" onclick="set3DView('iso')"
+                            style="font-size: 10px; padding: 5px;">ISO</button>
+                    </div>
                 </div>
                 <!-- Properties -->
                 <div class="sidebar-section">
@@ -1546,6 +1559,18 @@
                                             style="width: 100%; font-size: 11px; padding: 2px 4px;"
                                             oninput="updateSelectedWallColor('rgb', 'outer')">
                                     </div>
+                                </div>
+                                <div id="selectionTextureCtrl" style="display: none; margin-top: 8px;">
+                                    <label class="property-label" style="color: #991b1b; font-size: 10px;">Wall
+                                        Texture</label>
+                                    <select class="property-input" id="selectionTexture"
+                                        onchange="applySelectedTexture(this.value)"
+                                        style="background: white; border: 1px solid #fecaca;">
+                                        <option value="">Plain / Paint</option>
+                                        <option value="brick">Brick</option>
+                                        <option value="wood">Wood</option>
+                                        <option value="marble">Marble</option>
+                                    </select>
                                 </div>
                             </div>
 
@@ -1637,6 +1662,37 @@
                                     placeholder="R, G, B" oninput="updateWallColor('rgb')">
                             </div>
                         </div>
+                        <div class="property-row">
+                            <label class="property-label">Texture</label>
+                            <select class="property-input" id="wallTexture" onchange="updateWallTexture(this.value)">
+                                <option value="">Plain Paint</option>
+                                <option value="brick">Brick</option>
+                                <option value="wood">Wood</option>
+                                <option value="marble">Marble</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="property-group">
+                        <div class="property-title">Floor Settings</div>
+                        <div class="property-row">
+                            <label class="property-label">Height (Elevation)</label>
+                            <div style="display: flex; gap: 6px; width: 100%;">
+                                <input type="number" class="property-input" id="floorHeight" value="10" min="5" max="25"
+                                    step="1" onchange="updateFloorHeight(this.value)">
+                                <span class="dimension-unit">ft</span>
+                            </div>
+                        </div>
+                        <div class="property-row">
+                            <label class="property-label">Material</label>
+                            <select class="property-input" id="floorTextureSelect"
+                                onchange="updateFloorTexture(this.value)">
+                                <option value="">Default (White)</option>
+                                <option value="wood">Polished Wood</option>
+                                <option value="marble">White Marble</option>
+                                <option value="tiles">Gray Tiles</option>
+                            </select>
+                        </div>
                     </div>
 
                     <div class="property-group">
@@ -1686,6 +1742,16 @@
                         <span>🌍</span> 3D Environment (3D Only)
                     </div>
                     <div class="property-group">
+                        <div class="property-row">
+                            <label class="property-label">Presets</label>
+                            <select class="property-input" onchange="setEnvPreset(this.value)">
+                                <option value="">Choose Preset...</option>
+                                <option value="garden">🏡 Garden (Grass/Sky)</option>
+                                <option value="modern">🏢 Modern (Gray/White)</option>
+                                <option value="sketch">✏️ Architectural Sketch</option>
+                                <option value="night">🌙 Night View</option>
+                            </select>
+                        </div>
                         <div class="property-row" style="flex-direction: column; align-items: flex-start; gap: 8px;">
                             <label class="property-label">Ground Texture</label>
                             <input type="file" id="groundImgInput" accept="image/*" class="property-input"
@@ -2469,6 +2535,14 @@
             const DEFAULT_GROUND_IMG = 'grass.avif'; // Example: 'path/to/grass.jpg'
             const DEFAULT_ENV_IMG = 'sky.avif';    // Example: 'path/to/sky.jpg'
 
+            // Material Assets (Three.js Textures)
+            const ASSETS = {
+                brick: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/brick_diffuse.jpg',
+                wood: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/hardwood2_diffuse.jpg',
+                marble: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/floors/FloorsCheckerboard_S_Diffuse.jpg',
+                tiles: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/checkerboard.jpg'
+            };
+
             // Project state
             let project = {
                 name: '',
@@ -2483,14 +2557,17 @@
                         height: 10,
                         elements: [],
                         rooms: [],
-                        homeWall: null
+                        homeWall: null,
+                        floorTexture: ''
                     }
                 ],
                 activeFloorIndex: 0,
                 rooms: [],
                 homeWall: null,
                 groundTexture: DEFAULT_GROUND_IMG || null,
-                envTexture: DEFAULT_ENV_IMG || null
+                envTexture: DEFAULT_ENV_IMG || null,
+                defaultWallColor: '#1e293b',
+                defaultWallTexture: ''
             };
 
             // Image objects for 2D rendering
@@ -3502,11 +3579,14 @@
                         if (isWall) {
                             document.getElementById('singleColorCtrl').style.display = 'none';
                             document.getElementById('dualColorCtrl').style.display = 'flex';
+                            document.getElementById('selectionTextureCtrl').style.display = 'block';
                             document.getElementById('innerColorPicker').value = selectedElement.color || '#475569';
                             document.getElementById('outerColorPicker').value = selectedElement.color2 || selectedElement.color || '#475569';
+                            document.getElementById('selectionTexture').value = selectedElement.texture || '';
                         } else {
                             document.getElementById('singleColorCtrl').style.display = 'block';
                             document.getElementById('dualColorCtrl').style.display = 'none';
+                            document.getElementById('selectionTextureCtrl').style.display = 'none';
                             document.getElementById('selectionColorPicker').value = selectedElement.color || (selectedElement.type === 'text' ? '#000000' : '#475569');
                             document.getElementById('colorLabel').textContent = selectedElement.type === 'text' ? 'Text Color' : 'Paint Color';
                         }
@@ -5799,6 +5879,7 @@
                     const fW3d = (floor.length || project.totalLength) * unit;
                     const fH3d = (floor.breadth || project.totalBreadth) * unit;
                     const slabThick3d = 0.5 * unit; // 6 inch slab
+                    const floorTex = floor.floorTexture || project.defaultFloorTexture;
 
                     const pxTo3d = (px, py) => {
                         const hw = floor.homeWall || project.floors[0].homeWall;
@@ -5811,10 +5892,14 @@
                     // Floor Slab (Solid)
                     const slabGeo = new THREE.BoxGeometry(fW3d + 4, slabThick3d, fH3d + 4);
                     let slabMat;
-                    if (project.groundTexture) {
+                    if (floorTex && ASSETS[floorTex]) {
+                        const texture = new THREE.TextureLoader().load(ASSETS[floorTex]);
+                        texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+                        texture.repeat.set(floor.length / 5, floor.breadth / 5);
+                        slabMat = new THREE.MeshStandardMaterial({ map: texture });
+                    } else if (project.groundTexture && !floorTex) {
                         const texture = new THREE.TextureLoader().load(project.groundTexture);
                         texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-                        // Standard repeat: 1 repeat per 10 feet
                         texture.repeat.set(floor.length / 10, floor.breadth / 10);
                         slabMat = new THREE.MeshStandardMaterial({ map: texture });
                     } else {
@@ -5837,7 +5922,7 @@
                     }
 
                     const wallRegistry = new Set();
-                    function add3DWall(x1, z1, x2, z2, h, t, c, yOff = 0, c2 = null) {
+                    function add3DWall(x1, z1, x2, z2, h, t, c, yOff = 0, c2 = null, texKey = null) {
                         const r = v => Math.round(v);
                         const pOffset = yOff > 0 ? `|Y${r(yOff)}` : '';
                         const p1 = `${r(x1)},${r(z1)}|${r(x2)},${r(z2)}${pOffset}`;
@@ -5852,9 +5937,14 @@
                         const geo = new THREE.BoxGeometry(length, h, t);
 
                         let materials;
-                        if (c2 && c2 !== c) {
-                            // Multi-material for different sides
-                            // 0,1: Width Ends, 2,3: Top/Bottom, 4,5: Long Sides (Inside/Outside)
+                        const activeTex = texKey || project.defaultWallTexture;
+
+                        if (activeTex && ASSETS[activeTex]) {
+                            const tex = new THREE.TextureLoader().load(ASSETS[activeTex]);
+                            tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+                            tex.repeat.set(length / (unit * 2), h / (unit * 2));
+                            materials = new THREE.MeshStandardMaterial({ map: tex });
+                        } else if (c2 && c2 !== c) {
                             const mat1 = new THREE.MeshStandardMaterial({ color: c });
                             const mat2 = new THREE.MeshStandardMaterial({ color: c2 });
                             materials = [mat1, mat1, mat1, mat1, mat1, mat2];
@@ -5920,6 +6010,7 @@
                             if (wall.color) hole.color = wall.color;
                             if (wall.color2) hole.color2 = wall.color2;
                             if (wall.thickness) hole.thickness = wall.thickness;
+                            if (wall.texture) hole.texture = wall.texture;
                         });
 
                         // Sort and Merge Cuts
@@ -5951,7 +6042,7 @@
                             const p2 = pxTo3d(sx2, sy2);
                             const thick = (wall.thickness || 0.5) * unit;
 
-                            add3DWall(p1.x, p1.z, p2.x, p2.z, floorHeight3d, thick, wall.color || '#475569', 0, wall.color2);
+                            add3DWall(p1.x, p1.z, p2.x, p2.z, floorHeight3d, thick, wall.color || '#475569', 0, wall.color2, wall.texture);
                         };
 
                         merged.forEach(cut => {
@@ -5974,7 +6065,7 @@
                             const doorW = Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.z - p1.z, 2));
                             const doorAngle = Math.atan2(p2.z - p1.z, p2.x - p1.x);
 
-                            add3DWall(p1.x, p1.z, p2.x, p2.z, lintelH, thick, color, doorH, el.color2);
+                            add3DWall(p1.x, p1.z, p2.x, p2.z, lintelH, thick, color, doorH, el.color2, el.texture);
 
                             const doorGroup = new THREE.Group();
                             doorGroup.position.set(p1.x, elevation3d, p1.z);
@@ -6039,8 +6130,8 @@
                             const dist = Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.z - p1.z, 2));
                             const ang = Math.atan2(p2.z - p1.z, p2.x - p1.x);
 
-                            add3DWall(p1.x, p1.z, p2.x, p2.z, sillH, thick, color, 0, el.color2);
-                            add3DWall(p1.x, p1.z, p2.x, p2.z, lintelH, thick, color, headH, el.color2);
+                            add3DWall(p1.x, p1.z, p2.x, p2.z, sillH, thick, color, 0, el.color2, el.texture);
+                            add3DWall(p1.x, p1.z, p2.x, p2.z, lintelH, thick, color, headH, el.color2, el.texture);
 
                             const winGroup = new THREE.Group();
                             winGroup.position.set(p1.x, elevation3d, p1.z);
@@ -6435,6 +6526,103 @@
                 }
 
                 redrawAll();
+                if (is3DMode) init3D();
+            }
+
+            function setEnvPreset(preset) {
+                if (!preset) return;
+                saveState();
+
+                switch (preset) {
+                    case 'garden':
+                        project.groundTexture = 'grass.avif';
+                        project.envTexture = 'sky.avif';
+                        if (scene3D) {
+                            scene3D.background = new THREE.Color(0x87ceeb);
+                        }
+                        break;
+                    case 'modern':
+                        project.groundTexture = ASSETS.tiles;
+                        project.envTexture = null;
+                        if (scene3D) scene3D.background = new THREE.Color(0xeeeeee);
+                        break;
+                    case 'sketch':
+                        project.groundTexture = null;
+                        project.envTexture = null;
+                        project.defaultWallColor = '#ffffff';
+                        if (scene3D) scene3D.background = new THREE.Color(0xffffff);
+                        // Architectural look handled by white background and wireframes (if we had them)
+                        break;
+                    case 'night':
+                        project.groundTexture = null;
+                        project.envTexture = null;
+                        if (scene3D) {
+                            scene3D.background = new THREE.Color(0x0a0a1a);
+                            // We would adjust lights here if we had access to them globally
+                        }
+                        break;
+                }
+
+                if (is3DMode) init3D();
+                showToast('🌍', `Environment set to ${preset}`);
+            }
+
+            function set3DView(view) {
+                if (!camera3D || !controls3D) return;
+                const unit = 15;
+                const dist = Math.max(project.totalLength || 20, project.totalBreadth || 20) * unit * 1.5;
+
+                // Reset walk mode if active
+                if (isWalkMode) toggleWalkMode();
+
+                // Stop any running tour
+                if (isTouring) toggleTour();
+
+                switch (view) {
+                    case 'top':
+                        camera3D.position.set(0, dist * 1.5, 0);
+                        break;
+                    case 'front':
+                        camera3D.position.set(0, dist * 0.5, dist);
+                        break;
+                    case 'side':
+                        camera3D.position.set(dist, dist * 0.5, 0);
+                        break;
+                    case 'iso':
+                        camera3D.position.set(dist, dist, dist);
+                        break;
+                }
+                controls3D.target.set(0, 0, 0);
+                controls3D.update();
+                showToast('📸', `${view.toUpperCase()} View set`);
+            }
+
+            function updateWallTexture(val) {
+                project.defaultWallTexture = val;
+                if (is3DMode) init3D();
+            }
+
+            function updateFloorHeight(val) {
+                const h = parseInt(val);
+                if (isNaN(h)) return;
+                const activeFloor = project.floors[project.activeFloorIndex];
+                activeFloor.height = h;
+                if (is3DMode) init3D();
+            }
+
+            function updateFloorTexture(val) {
+                const activeFloor = project.floors[project.activeFloorIndex];
+                activeFloor.floorTexture = val;
+                if (is3DMode) init3D();
+            }
+
+            function applySelectedTexture(val) {
+                if (selectedElement && selectedElement.type === 'wall') {
+                    saveState();
+                    selectedElement.texture = val;
+                    if (is3DMode) init3D();
+                    redrawAll();
+                }
             }
 
             function updateSelectedWallColor(source, side) {
