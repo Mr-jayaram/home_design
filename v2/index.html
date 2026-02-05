@@ -913,44 +913,42 @@
         }
 
         .three-overlay-controls {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
             display: flex;
-            gap: 12px;
-            z-index: 1000;
-            background: rgba(15, 23, 42, 0.8);
-            padding: 10px 20px;
-            border-radius: 50px;
-            backdrop-filter: blur(8px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            align-items: center;
+            flex-direction: column;
+            gap: 10px;
+            padding: 12px;
+            background: var(--bg-card);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            margin-bottom: 20px;
         }
 
         .three-control-btn {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: white;
-            padding: 8px 16px;
-            border-radius: 20px;
+            background: var(--bg-main);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 10px 16px;
+            border-radius: 8px;
             cursor: pointer;
             display: flex;
             align-items: center;
+            justify-content: center;
             gap: 8px;
             font-size: 13px;
             font-weight: 500;
             transition: all 0.2s;
+            width: 100%;
         }
 
         .three-control-btn:hover {
-            background: rgba(255, 255, 255, 0.2);
+            background: var(--border);
             border-color: var(--primary);
         }
 
         .three-control-btn.active {
             background: var(--primary);
             color: white;
+            border-color: var(--primary);
         }
 
         .walk-hint {
@@ -1439,8 +1437,17 @@
                     <canvas id="designCanvas"></canvas>
                     <div id="threeContainer" style="display: none; width: 100%; height: 100%;"></div>
 
-                    <!-- 3D Controls Overlay -->
-                    <div id="threeControls" class="three-overlay-controls" style="display: none;">
+                </div>
+            </main>
+
+            <!-- Right Sidebar -->
+            <aside class="sidebar-right" id="sidebarRight">
+                <!-- 3D View Controls -->
+                <div id="threeControls" class="sidebar-section" style="display: none;">
+                    <div class="sidebar-title">
+                        <span>🎮</span> 3D View Controls
+                    </div>
+                    <div class="three-overlay-controls">
                         <button class="three-control-btn" id="roofBtn" onclick="toggleRoof()">
                             <span class="icon">🏠</span> <span class="text">Roof: ON</span>
                         </button>
@@ -1454,16 +1461,11 @@
                             <span class="icon">🚀</span>
                             <span class="text" style="margin-right:5px; font-size:11px;">Speed:</span>
                             <input type="range" id="tourSpeedRange" min="1" max="20" value="10"
-                                style="width: 70px; accent-color: var(--primary);" oninput="updateTourSpeed()"
-                                onpointerdown="event.stopPropagation()">
+                                style="flex: 1; accent-color: var(--primary); margin-left: 10px;"
+                                oninput="updateTourSpeed()" onpointerdown="event.stopPropagation()">
                         </div>
-
                     </div>
                 </div>
-            </main>
-
-            <!-- Right Sidebar -->
-            <aside class="sidebar-right" id="sidebarRight">
                 <!-- Properties -->
                 <div class="sidebar-section">
                     <div class="sidebar-title">
@@ -3111,23 +3113,8 @@
                 project.homeWall = { x, y, width: wallWidth, height: wallHeight };
 
                 // Draw background
-                if (groundImageObj && groundImageObj.complete) {
-                    ctx.save();
-                    // Create pattern for tiling or just stretch? 
-                    // Tiling is usually better for floors
-                    try {
-                        const pattern = ctx.createPattern(groundImageObj, 'repeat');
-                        ctx.fillStyle = pattern;
-                        ctx.fillRect(x, y, wallWidth, wallHeight);
-                    } catch (e) {
-                        ctx.fillStyle = '#f9fafb';
-                        ctx.fillRect(x, y, wallWidth, wallHeight);
-                    }
-                    ctx.restore();
-                } else {
-                    ctx.fillStyle = '#f9fafb';
-                    ctx.fillRect(x, y, wallWidth, wallHeight);
-                }
+                ctx.fillStyle = '#f9fafb';
+                ctx.fillRect(x, y, wallWidth, wallHeight);
 
                 // Draw wall border (thick outer walls)
                 ctx.strokeStyle = '#1e293b';
@@ -5186,7 +5173,7 @@
                     btnText.textContent = '2D';
                     canvasEl.style.display = 'none';
                     container.style.display = 'block';
-                    document.getElementById('threeControls').style.display = 'flex';
+                    document.getElementById('threeControls').style.display = 'block';
                     // Deactivate tools
                     document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
                     sidebar.style.pointerEvents = 'none';
