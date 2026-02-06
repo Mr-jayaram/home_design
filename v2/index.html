@@ -1941,6 +1941,42 @@
                     </div>
                 </div>
 
+                <!-- Layers Panel -->
+                <div class="sidebar-section">
+                    <div class="sidebar-title">
+                        <span>🗂️</span> Project Layers
+                    </div>
+                    <div class="property-group">
+                        <div class="property-title">Floors</div>
+                        <div id="floorLayersList">
+                            <!-- Floor layers will be injected here -->
+                        </div>
+                    </div>
+                    <div class="property-group">
+                        <div class="property-title">Object Summary</div>
+                        <div class="layer-item">
+                            <span class="layer-name">🏗️ Home Boundary</span>
+                            <span class="layer-count" id="homeCount">0</span>
+                        </div>
+                        <div class="layer-item">
+                            <span class="layer-name">🏠 Rooms</span>
+                            <span class="layer-count" id="roomsCount">0</span>
+                        </div>
+                        <div class="layer-item">
+                            <span class="layer-name">📏 Walls</span>
+                            <span class="layer-count" id="wallCount">0</span>
+                        </div>
+                        <div class="layer-item">
+                            <span class="layer-name">🚪 Doors & Windows</span>
+                            <span class="layer-count" id="doorWindowCount">0</span>
+                        </div>
+                        <div class="layer-item">
+                            <span class="layer-name">🪑 Furniture</span>
+                            <span class="layer-count" id="furnitureCount">0</span>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Project Stats -->
                 <div class="sidebar-section">
                     <div class="sidebar-title">
@@ -6056,8 +6092,7 @@
                 const totalW3d = homeW * unit;
                 const totalH3d = homeH * unit;
 
-                // const grid = new THREE.GridHelper(Math.max(totalW3d, totalH3d) + 100, 20, 0xcbd5e1, 0xe2e8f0);
-                // scene3D.add(grid);
+                // 3D Floor Grid removed as per request
 
                 // Giant Ground Plane (Infinite Horizon Style)
                 const groundSize = 10000;
