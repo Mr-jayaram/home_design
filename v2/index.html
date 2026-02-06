@@ -55,13 +55,16 @@
         .header {
             background: linear-gradient(135deg, var(--bg-panel) 0%, var(--bg-card) 100%);
             border-bottom: 1px solid var(--border);
-            padding: 0 20px;
+            padding: 0 10px;
+            /* Reduced padding on mobile */
             height: 60px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
             z-index: 1001;
+            overflow: hidden;
+            /* Prevent header itself from scrolling */
         }
 
         .logo {
@@ -89,6 +92,9 @@
             display: flex;
             gap: 8px;
             align-items: center;
+            flex-grow: 1;
+            justify-content: flex-end;
+            margin-left: 10px;
         }
 
         .btn {
@@ -841,6 +847,28 @@
                 font-size: 18px;
             }
 
+            .header-actions {
+                overflow-x: auto;
+                justify-content: flex-start;
+                padding-bottom: 4px;
+                /* Space for hidden scrollbar */
+                -ms-overflow-style: none;
+                /* IE and Edge */
+                scrollbar-width: none;
+                /* Firefox */
+                flex-wrap: nowrap;
+                mask-image: linear-gradient(to right, black 85%, transparent 100%);
+            }
+
+            .header-actions::-webkit-scrollbar {
+                display: none;
+                /* Hide scrollbar for Chrome, Safari, Opera */
+            }
+
+            .header-actions .btn {
+                flex-shrink: 0;
+            }
+
             .header-actions .btn:not(.btn-primary) {
                 padding: 10px;
             }
@@ -1199,7 +1227,7 @@
                         <span>🛠️</span> Drawing Tools
                     </div>
                     <div class="tool-grid">
-                        <div class="tool-btn active" onclick="selectTool('select')" id="tool-select">
+                        <div class="tool-btn" onclick="selectTool('select')" id="tool-select">
                             <span class="tool-icon">👆</span>
                             <div class="tool-label">Select</div>
                         </div>
@@ -2200,7 +2228,7 @@
             const ctx = canvas.getContext('2d');
 
             // Application state
-            let currentTool = 'select';
+            let currentTool = null; // No tool selected by default
             let isDrawing = false;
             let isExporting = false;
             let startX, startY;
@@ -3072,6 +3100,14 @@
             // Initialize
             function init() {
                 window.addEventListener('resize', resizeCanvas);
+
+                // NEW: Default 90 deg rotation for mobile
+                if (window.innerWidth <= 992) {
+                    rotation = 90;
+                    const canvasEl = document.getElementById('designCanvas');
+                    if (canvasEl) canvasEl.style.transform = `rotate(${rotation}deg)`;
+                }
+
                 resizeCanvas();
 
                 canvas.addEventListener('mousedown', handleMouseDown);
@@ -3619,7 +3655,7 @@
             }
 
             function handleMouseDown(e) {
-                if (placingItemType) return;
+                if (placingItemType || !currentTool) return;
 
                 const pos = getMousePos(e);
                 const processedStart = getProcessedPoint(pos.x, pos.y);
@@ -5372,19 +5408,31 @@
                 offsetX = 0;
                 offsetY = 0;
 
-                const padding = 40;
+                const padding = 60; // Extra visual padding in pixels
                 const availableWidth = canvas.width - padding;
                 const availableHeight = canvas.height - padding;
 
-                const scaleX = availableWidth / project.totalLength;
-                const scaleY = availableHeight / project.totalBreadth;
+                // 4 side 3 feet show space = 6 feet extra total
+                const marginFeet = 6;
+
+                // If rotated 90 or 270, the mapping of project dimension to canvas dimension is swapped
+                const scaleX = (rotation % 180 === 0) ? (availableWidth / (project.totalLength + marginFeet)) : (availableHeight / (project.totalLength + marginFeet));
+                const scaleY = (rotation % 180 === 0) ? (availableHeight / (project.totalBreadth + marginFeet)) : (availableWidth / (project.totalBreadth + marginFeet));
 
                 let optimalScale = Math.floor(Math.min(scaleX, scaleY));
                 optimalScale = Math.max(5, Math.min(30, optimalScale));
 
                 document.getElementById('zoomRange').value = optimalScale;
                 updateScale();
-                showToast('📏', 'Fit to screen');
+
+                // Re-center after scale update
+                const wallWidth = project.totalLength * SCALE;
+                const wallHeight = project.totalBreadth * SCALE;
+                project.homeWall.x = (canvas.width - wallWidth) / 2;
+                project.homeWall.y = (canvas.height - wallHeight) / 2;
+
+                redrawAll();
+                showToast('📏', 'Fit to screen (with 3ft margin)');
             }
 
             function toggleRotation() {
