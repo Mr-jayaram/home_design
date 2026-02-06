@@ -175,6 +175,29 @@
             display: flex;
             align-items: center;
             gap: 8px;
+            cursor: pointer;
+            user-select: none;
+            padding: 8px 0;
+            transition: color 0.2s;
+        }
+
+        .sidebar-title:hover {
+            color: var(--primary);
+        }
+
+        .sidebar-title::after {
+            content: '▼';
+            margin-left: auto;
+            font-size: 10px;
+            transition: transform 0.3s;
+        }
+
+        .sidebar-section.collapsed .sidebar-title::after {
+            transform: rotate(-90deg);
+        }
+
+        .sidebar-section.collapsed>*:not(.sidebar-title) {
+            display: none !important;
         }
 
         .tool-grid {
@@ -913,64 +936,191 @@
             }
         }
 
-        .three-overlay-controls {
+        /* 3D View Controls Overlay */
+        .three-controls-overlay {
+            position: absolute;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
             display: flex;
             flex-direction: column;
-            gap: 10px;
-            padding: 12px;
-            background: var(--bg-card);
-            border-radius: 8px;
-            border: 1px solid var(--border);
-            margin-bottom: 20px;
+            align-items: center;
+            gap: 12px;
+            z-index: 1005;
+            width: auto;
+            max-width: 95vw;
+            pointer-events: none;
+        }
+
+        .three-controls-overlay>* {
+            pointer-events: auto;
+        }
+
+        .three-control-btn.speed-ctrl {
+            min-width: 140px;
+        }
+
+        .three-overlay-controls {
+            display: flex;
+            gap: 12px;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(15px) saturate(180%);
+            -webkit-backdrop-filter: blur(15px) saturate(180%);
+            border-radius: 50px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15), inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+            border: none;
         }
 
         .three-control-btn {
-            background: var(--bg-main);
-            border: 1px solid var(--border);
-            color: var(--text-primary);
-            padding: 10px 16px;
-            border-radius: 8px;
+            background: linear-gradient(135deg, var(--bg-panel) 0%, var(--bg-card) 100%);
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 30px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
+            gap: 10px;
             font-size: 13px;
-            font-weight: 500;
-            transition: all 0.2s;
-            width: 100%;
+            font-weight: 700;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
         }
 
         .three-control-btn:hover {
-            background: var(--border);
-            border-color: var(--primary);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(37, 99, 235, 0.2);
+            background: white;
         }
 
         .three-control-btn.active {
             background: var(--primary);
             color: white;
-            border-color: var(--primary);
+            box-shadow: 0 8px 20px rgba(37, 99, 235, 0.4);
         }
 
-        .walk-hint {
-            color: white;
+        .three-presets-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.6);
+
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+        }
+
+        .three-presets-grid .btn-secondary {
             font-size: 11px;
-            opacity: 0.8;
-            padding-left: 10px;
-            border-left: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 8px 12px;
+            border-radius: 12px;
+            color: white;
+            background: linear-gradient(135deg, var(--bg-panel) 0%, var(--bg-card) 100%);
+
+            border: none;
+            font-weight: 600;
+            transition: all 0.2s;
         }
 
-        @media (max-width: 768px) {
-            .three-overlay-controls {
-                bottom: 10px;
-                padding: 8px 12px;
-                flex-direction: column;
-                border-radius: 20px;
+        .three-presets-grid .btn-secondary:hover {
+            background: var(--primary);
+            color: white;
+            transform: scale(1.05);
+        }
+
+        @media (max-width: 992px) {
+
+            .three-controls-overlay {
+                bottom: 15px;
+                /* Adjust for mobile viewports */
             }
 
-            .walk-hint {
-                display: none !important;
+            .three-overlay-controls {
+                flex-direction: column;
+                padding: 12px;
+                border-radius: 20px;
+                width: 200px;
+                align-items: stretch;
             }
+
+            .three-control-btn {
+                padding: 10px;
+                width: 100%;
+            }
+
+            .three-presets-grid {
+                grid-template-columns: repeat(2, 1fr);
+                width: 200px;
+            }
+
+            /* Ensure canvas area is dominant on top in mobile */
+            .main-content {
+                display: flex;
+                flex-direction: column;
+            }
+
+            .canvas-area {
+                order: -1;
+                /* Move to top of stack */
+                height: 60vh;
+                /* Fixed height for 3D on mobile */
+                min-height: 400px;
+            }
+
+            .sidebar-left,
+            .sidebar-right {
+                order: 1;
+            }
+        }
+
+        /* 3D Controls Toggle */
+        .three-controls-toggle {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1010;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            transition: all 0.2s;
+            display: none;
+        }
+
+        .three-controls-toggle:hover {
+            background: var(--secondary);
+            transform: translateX(-50%) translateY(-2px);
+        }
+
+        .three-controls-overlay.minimized {
+            display: none !important;
+        }
+
+        .minimize-btn {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            width: 24px;
+            height: 24px;
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 16px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            z-index: 10;
         }
     </style>
 </head>
@@ -1437,49 +1587,56 @@
                 <div class="canvas-wrapper" style="position: relative;">
                     <canvas id="designCanvas"></canvas>
                     <div id="threeContainer" style="display: none; width: 100%; height: 100%;"></div>
+                </div>
 
+                <!-- 3D Controls Overlay -->
+                <button id="threeControlsToggle" class="three-controls-toggle" onclick="toggleThreeControls()">
+                    <span>🎮</span> 3D Controls
+                </button>
+                <div id="threeControls" class="three-controls-overlay  minimized" style="display: none;">
+                    <button class="minimize-btn" onclick="toggleThreeControls()" title="Minimize">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">close</span>
+                    </button>
+                    <div class="three-overlay-controls">
+                        <button class="three-control-btn" id="roofBtn" onclick="toggleRoof()" title="Toggle Roof">
+                            <span class="material-symbols-outlined">roofing</span>
+                            <span class="text">Roof: ON</span>
+                        </button>
+                        <button class="three-control-btn" id="walkBtn" onclick="toggleWalkMode()" title="Walk Mode">
+                            <span class="material-symbols-outlined">directions_walk</span>
+                            <span class="text">Walk: OFF</span>
+                        </button>
+                        <button class="three-control-btn" id="tourBtn" onclick="toggleTour()" title="Auto Tour">
+                            <span class="material-symbols-outlined">play_circle</span>
+                            <span class="text">Tour</span>
+                        </button>
+                        <div class="three-control-btn speed-ctrl"
+                            style="cursor: default; padding-right: 12px; height: 42px;">
+                            <span class="material-symbols-outlined">speed</span>
+                            <input type="range" id="tourSpeedRange" min="1" max="20" value="10"
+                                style="width: 80px; accent-color: var(--primary);" oninput="updateTourSpeed()"
+                                onpointerdown="event.stopPropagation()">
+                        </div>
+                    </div>
+                    <div class="three-presets-grid">
+                        <button class="btn btn-secondary" onclick="set3DView('top')" title="Top View">
+                            <span class="material-symbols-outlined">south</span> Top
+                        </button>
+                        <button class="btn btn-secondary" onclick="set3DView('front')" title="Front View">
+                            <span class="material-symbols-outlined">north</span> Front
+                        </button>
+                        <button class="btn btn-secondary" onclick="set3DView('side')" title="Side View">
+                            <span class="material-symbols-outlined">east</span> Side
+                        </button>
+                        <button class="btn btn-secondary" onclick="set3DView('iso')" title="Isometric View">
+                            <span class="material-symbols-outlined">dynamic_feed</span> ISO
+                        </button>
+                    </div>
                 </div>
             </main>
 
             <!-- Right Sidebar -->
             <aside class="sidebar-right" id="sidebarRight">
-                <!-- 3D View Controls -->
-                <div id="threeControls" class="sidebar-section" style="display: none;">
-                    <div class="sidebar-title">
-                        <span>🎮</span> 3D View Controls
-                    </div>
-                    <div class="three-overlay-controls">
-                        <button class="three-control-btn" id="roofBtn" onclick="toggleRoof()">
-                            <span class="icon">🏠</span> <span class="text">Roof: ON</span>
-                        </button>
-                        <button class="three-control-btn" id="walkBtn" onclick="toggleWalkMode()">
-                            <span class="icon">🚶</span> <span class="text">Walk Mode: OFF</span>
-                        </button>
-                        <button class="three-control-btn" id="tourBtn" onclick="toggleTour()">
-                            <span class="icon">🎬</span> <span class="text">Auto Tour</span>
-                        </button>
-                        <div class="three-control-btn" style="cursor: default; padding-right: 8px;">
-                            <span class="icon">🚀</span>
-                            <span class="text" style="margin-right:5px; font-size:11px;">Speed:</span>
-                            <input type="range" id="tourSpeedRange" min="1" max="20" value="10"
-                                style="flex: 1; accent-color: var(--primary); margin-left: 10px;"
-                                oninput="updateTourSpeed()" onpointerdown="event.stopPropagation()">
-                        </div>
-                    </div>
-                    <div class="sidebar-title" style="margin-top: 12px; font-size: 11px; opacity: 0.8;">
-                        <span>📸</span> Elevation Presets
-                    </div>
-                    <div class="tool-grid" style="grid-template-columns: 1fr 1fr; gap: 5px; padding: 0 12px 12px 12px;">
-                        <button class="btn btn-secondary" onclick="set3DView('top')"
-                            style="font-size: 10px; padding: 5px;">Top</button>
-                        <button class="btn btn-secondary" onclick="set3DView('front')"
-                            style="font-size: 10px; padding: 5px;">Front</button>
-                        <button class="btn btn-secondary" onclick="set3DView('side')"
-                            style="font-size: 10px; padding: 5px;">Side</button>
-                        <button class="btn btn-secondary" onclick="set3DView('iso')"
-                            style="font-size: 10px; padding: 5px;">ISO</button>
-                    </div>
-                </div>
                 <!-- Properties -->
                 <div class="sidebar-section">
                     <div class="sidebar-title">
@@ -1693,6 +1850,12 @@
                                 <option value="marble">White Marble</option>
                                 <option value="tiles">Gray Tiles</option>
                             </select>
+                        </div>
+                        <div class="property-row" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+                            <label class="property-label">Upload Custom Floor</label>
+                            <input type="file" id="floorImgInput" accept="image/*" class="property-input"
+                                style="font-size: 11px; width: 100%; cursor: pointer;"
+                                onchange="handle3DImageUpload(this, 'floor')">
                         </div>
                     </div>
 
@@ -2535,6 +2698,7 @@
             // Default Assets - Replace these paths with your actual images
             const DEFAULT_GROUND_IMG = 'grass.avif'; // Example: 'path/to/grass.jpg'
             const DEFAULT_ENV_IMG = 'sky.avif';    // Example: 'path/to/sky.jpg'
+            const DEFAULT_FLOOR_IMG = 'tiles.jpg';         // Path to default floor texture
 
             // Material Assets (Three.js Textures)
             const ASSETS = {
@@ -2568,7 +2732,8 @@
                 groundTexture: DEFAULT_GROUND_IMG || null,
                 envTexture: DEFAULT_ENV_IMG || null,
                 defaultWallColor: '#1e293b',
-                defaultWallTexture: ''
+                defaultWallTexture: '',
+                defaultFloorTexture: DEFAULT_FLOOR_IMG || ''
             };
 
             // Image objects for 2D rendering
@@ -2614,9 +2779,13 @@
                         groundImageObj.src = dataUrl;
                         groundImageObj.onload = () => redrawAll();
                         showToast('🌱', 'Ground texture updated!');
-                    } else {
+                    } else if (type === 'env') {
                         project.envTexture = dataUrl;
                         showToast('🖼️', 'Environment background updated!');
+                    } else if (type === 'floor') {
+                        const activeFloor = project.floors[project.activeFloorIndex];
+                        activeFloor.floorTexture = dataUrl;
+                        showToast('🏢', 'Floor texture updated!');
                     }
 
                     // If in 3D mode, re-initialize to show changes
@@ -5254,7 +5423,26 @@
                     btnText.textContent = '2D';
                     canvasEl.style.display = 'none';
                     container.style.display = 'block';
-                    document.getElementById('threeControls').style.display = 'block';
+
+                    const threeCtrls = document.getElementById('threeControls');
+                    const toggleBtn = document.getElementById('threeControlsToggle');
+
+                    if (threeCtrls.classList.contains('minimized')) {
+                        threeCtrls.style.display = 'none';
+                        toggleBtn.style.display = 'block';
+                    } else {
+                        threeCtrls.style.display = 'flex';
+                        toggleBtn.style.display = 'none';
+                    }
+
+                    // Hide 2D toolbars with safety
+                    const cToolbar = document.querySelector('.canvas-toolbar');
+                    if (cToolbar) cToolbar.style.display = 'none';
+                    const dBar = document.querySelector('.dimension-bar');
+                    if (dBar) dBar.style.display = 'none';
+                    const dGrid = document.querySelector('.dimension-grid');
+                    if (dGrid) dGrid.style.display = 'none';
+
                     // Deactivate tools
                     document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
                     sidebar.style.pointerEvents = 'none';
@@ -5274,7 +5462,18 @@
                     btnText.textContent = '3D';
                     canvasEl.style.display = 'block';
                     container.style.display = 'none';
+
                     document.getElementById('threeControls').style.display = 'none';
+                    document.getElementById('threeControlsToggle').style.display = 'none';
+
+                    // Show 2D toolbars with safety
+                    const cToolbarShow = document.querySelector('.canvas-toolbar');
+                    if (cToolbarShow) cToolbarShow.style.display = 'flex';
+                    const dBarShow = document.querySelector('.dimension-bar');
+                    if (dBarShow) dBarShow.style.display = 'grid';
+                    const dGridShow = document.querySelector('.dimension-grid');
+                    if (dGridShow) dGridShow.style.display = 'grid';
+
                     sidebar.style.pointerEvents = 'auto';
                     sidebar.style.opacity = '1';
 
@@ -5893,8 +6092,10 @@
                     // Floor Slab (Solid)
                     const slabGeo = new THREE.BoxGeometry(fW3d + 4, slabThick3d, fH3d + 4);
                     let slabMat;
-                    if (floorTex && ASSETS[floorTex]) {
-                        const texture = new THREE.TextureLoader().load(ASSETS[floorTex]);
+                    // Check if floorTex is a DataURL (uploaded image) or a key in ASSETS
+                    if (floorTex && (floorTex.startsWith('data:image') || ASSETS[floorTex])) {
+                        const texUrl = ASSETS[floorTex] || floorTex;
+                        const texture = new THREE.TextureLoader().load(texUrl);
                         texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
                         texture.repeat.set(floor.length / 5, floor.breadth / 5);
                         slabMat = new THREE.MeshStandardMaterial({ map: texture });
@@ -6676,6 +6877,27 @@
                 }
 
                 changeSelectedColor(side);
+            }
+
+            // --- Collapsible UI Logic ---
+            document.addEventListener('click', (e) => {
+                const title = e.target.closest('.sidebar-title');
+                if (title && title.parentElement.classList.contains('sidebar-section')) {
+                    title.parentElement.classList.toggle('collapsed');
+                }
+            });
+
+            function toggleThreeControls() {
+                const overlay = document.getElementById('threeControls');
+                const toggleBtn = document.getElementById('threeControlsToggle');
+                const isMinimized = overlay.classList.toggle('minimized');
+
+                if (isMinimized) {
+                    toggleBtn.style.display = 'block';
+                } else {
+                    toggleBtn.style.display = 'none';
+                    overlay.style.display = 'flex'; // Ensure it's showing if maximizing
+                }
             }
 
         </script>
