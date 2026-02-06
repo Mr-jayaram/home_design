@@ -1616,13 +1616,11 @@
                             <span class="material-symbols-outlined">play_circle</span>
                             <span class="text">Tour</span>
                         </button>
-                        <div class="three-control-btn speed-ctrl"
-                            style="cursor: default; padding-right: 12px; height: 42px;">
-                            <span class="material-symbols-outlined">speed</span>
-                            <input type="range" id="tourSpeedRange" min="1" max="20" value="10"
-                                style="width: 80px; accent-color: var(--primary);" oninput="updateTourSpeed()"
-                                onpointerdown="event.stopPropagation()">
-                        </div>
+                        <button class="three-control-btn" id="recordBtn" onclick="toggleRecording()"
+                            title="Record Video">
+                            <span class="material-symbols-outlined">videocam</span>
+                            <span class="text">Record</span>
+                        </button>
                     </div>
                     <div class="three-presets-grid">
                         <button class="btn btn-secondary" onclick="set3DView('top')" title="Top View">
@@ -5733,171 +5731,20 @@
             let tourStep = 0;
             let tourProgress = 0;
             let TOUR_MOVE_SPEED = 30; // units/sec
-            let TOUR_ROT_SPEED = Math.PI * 2 / 10; // 0.628 rads/sec (10s circle)
+            let TOUR_ROT_SPEED = (Math.PI * 2) / 5; // 5s full rotation
 
             function updateTourSpeed() {
-                const val = parseInt(document.getElementById('tourSpeedRange').value);
-                // Default val 10. Max 20. Min 1.
+                const val = parseInt(document.getElementById('tourSpeedRange') ? document.getElementById('tourSpeedRange').value : 10);
                 const factor = val / 10;
                 TOUR_MOVE_SPEED = 30 * factor;
-                TOUR_ROT_SPEED = (Math.PI * 2 / 10) * factor;
-                // Better not spam toast on drag.
+                TOUR_ROT_SPEED = ((Math.PI * 2) / 5) * factor;
             }
 
             function generateSmartTourPath() {
                 const path = [];
-                const visitedRooms = new Set();
-                const unit = 15;
-
-                // Helper to convert 2D px to 3D world coords
-                const hw = project.homeWall;
-                const fW3d = project.totalLength * unit;
-                const fH3d = project.totalBreadth * unit;
-
-                const to3D = (x, y) => {
-                    const x3d = (x - hw.x) / hw.width * fW3d - fW3d / 2;
-                    const z3d = (y - hw.y) / hw.height * fH3d - fH3d / 2;
-                    const y3d = (5.5 * 15); // Eye level
-                    return new THREE.Vector3(x3d, y3d, z3d);
-                };
-
-                // 1. Find Main Door (Exterior Door)
-                // Heuristic: Door on the building hull (homeWall boundary)
-                const doors = elements.filter(el => el.type === 'door');
-                let mainDoor = null;
-                let mainDoorDist = Infinity;
-
-                const margin = 20; // Tolerance in pixels
-                doors.forEach(door => {
-                    const cx = (door.x1 + door.x2) / 2;
-                    const cy = (door.y1 + door.y2) / 2;
-
-                    const onLeft = Math.abs(cx - hw.x) < margin;
-                    const onRight = Math.abs(cx - (hw.x + hw.width)) < margin;
-                    const onTop = Math.abs(cy - hw.y) < margin;
-                    const onBottom = Math.abs(cy - (hw.y + hw.height)) < margin;
-
-                    if (onLeft || onRight || onTop || onBottom) {
-                        // It's an exterior door. Pick the one closest to top-left or just the first one.
-                        // Let's pick the one closest to the bottom (entry) or just use the first found.
-                        if (!mainDoor) mainDoor = { el: door, pos: { x: cx, y: cy }, side: onLeft ? 'xm' : onRight ? 'xp' : onTop ? 'ym' : 'yp' };
-                    }
-                });
-
-                // Fallback: If no exterior door, start at first room center
-                if (!mainDoor) {
-                    if (project.rooms.length > 0) {
-                        const r = project.rooms[0];
-                        path.push({ type: 'move', target: to3D(r.x + r.width / 2, r.y + r.height / 2) });
-                        path.push({ type: 'rotate' });
-                    }
-                    return path;
-                }
-
-                // 2. Start Outside
-                const start2D = { x: mainDoor.pos.x, y: mainDoor.pos.y };
-                const offset = 30; // 2 feet distance (at 2ft/s = 1 sec to door)
-                if (mainDoor.side === 'xm') start2D.x -= offset;
-                else if (mainDoor.side === 'xp') start2D.x += offset;
-                else if (mainDoor.side === 'ym') start2D.y -= offset;
-                else if (mainDoor.side === 'yp') start2D.y += offset;
-
-                path.push({ type: 'move', target: to3D(start2D.x, start2D.y) }); // Start Point
-                path.push({ type: 'move', target: to3D(mainDoor.pos.x, mainDoor.pos.y) }); // Door Threshold
-
-                // 3. Enter ("Traverse") logic
-                // Find the room connected to this door
-                // A door connects two spaces. One is outside (since it's main door). The other is a Room.
-                // Check sample point "inside"
-                const inX = mainDoor.pos.x + (mainDoor.side === 'xm' ? 20 : mainDoor.side === 'xp' ? -20 : 0);
-                const inY = mainDoor.pos.y + (mainDoor.side === 'ym' ? 20 : mainDoor.side === 'yp' ? -20 : 0);
-
-                const findRoomAt = (x, y) => {
-                    return project.rooms.find(r =>
-                        x >= r.x && x <= r.x + r.width &&
-                        y >= r.y && y <= r.y + r.height
-                    );
-                };
-
-                const startRoom = findRoomAt(inX, inY);
-
-                if (startRoom) {
-                    traverseRoom(startRoom, mainDoor.el, path, visitedRooms, to3D);
-                }
-
-                // Return to outside to finish
-                path.push({ type: 'move', target: to3D(mainDoor.pos.x, mainDoor.pos.y) });
-                path.push({ type: 'move', target: to3D(start2D.x, start2D.y) });
-
+                // Simple 360 cinematic orbit
+                path.push({ type: 'orbit' });
                 return path;
-            }
-
-            function traverseRoom(room, entryDoor, path, visited, to3D) {
-                if (visited.has(room)) return;
-                visited.add(room);
-
-                // 1. Go to Center
-                const cx = room.x + room.width / 2;
-                const cy = room.y + room.height / 2;
-                const center3D = to3D(cx, cy);
-
-                path.push({ type: 'move', target: center3D });
-
-                // 2. Rotate 360
-                path.push({ type: 'rotate' });
-
-                // 3. Find connected doors
-                // Check all doors to see if they overlap this room rect
-                const roomDoors = elements.filter(el => {
-                    if (el.type !== 'door' || el === entryDoor) return false;
-                    // Check if door center is on room edge or inside (roughly)
-                    // Actually strict overlap check:
-                    const dx = (el.x1 + el.x2) / 2;
-                    const dy = (el.y1 + el.y2) / 2;
-                    // Expand room boundary slightly for tolerance
-                    const tol = 10;
-                    return (dx >= room.x - tol && dx <= room.x + room.width + tol &&
-                        dy >= room.y - tol && dy <= room.y + room.height + tol);
-                });
-
-                // Sort doors? Maybe by distance from center?
-                // For now simple iteration
-                roomDoors.forEach(nextDoor => {
-                    // Find target room on the OTHER side of this door
-                    // Sampling points on both sides of door
-                    const mx = (nextDoor.x1 + nextDoor.x2) / 2;
-                    const my = (nextDoor.y1 + nextDoor.y2) / 2;
-
-                    // Door is usually horizontal or vertical. Move perpendicular.
-                    const isHorz = Math.abs(nextDoor.y1 - nextDoor.y2) < 5;
-                    const step = 20;
-
-                    // Two candidate points
-                    const p1 = { x: mx + (isHorz ? 0 : step), y: my + (isHorz ? step : 0) };
-                    const p2 = { x: mx - (isHorz ? 0 : step), y: my - (isHorz ? step : 0) };
-
-                    let nextRoom = findRoomAt(p1.x, p1.y);
-                    if (nextRoom === room) nextRoom = findRoomAt(p2.x, p2.y);
-
-                    if (nextRoom && !visited.has(nextRoom)) {
-                        // Go to Door
-                        path.push({ type: 'move', target: to3D(mx, my) });
-                        // Recurse
-                        traverseRoom(nextRoom, nextDoor, path, visited, to3D);
-                        // Return to Door (After exploring child room)
-                        path.push({ type: 'move', target: to3D(mx, my) });
-                        // Return to Center (To serve as hub for next door)
-                        path.push({ type: 'move', target: center3D });
-                    }
-                });
-
-                // Helper needed inside scope or moved out
-                function findRoomAt(x, y) {
-                    return project.rooms.find(r =>
-                        x >= r.x && x <= r.x + r.width &&
-                        y >= r.y && y <= r.y + r.height
-                    );
-                }
             }
 
             function toggleTour() {
@@ -5973,6 +5820,118 @@
                         tourProgress = 0;
                         tourStep++;
                     }
+                } else if (step.type === 'orbit') {
+                    const rotStep = TOUR_ROT_SPEED * delta;
+                    tourProgress += rotStep;
+
+                    const unit = 15;
+                    const w = (project.totalLength || 40) * unit;
+                    const h = (project.totalBreadth || 30) * unit;
+                    const dist = Math.max(w, h) * 1.8;
+                    const camHeight = dist * 0.7;
+
+                    // Orbit calculation
+                    camera3D.position.x = Math.sin(tourProgress) * dist;
+                    camera3D.position.z = Math.cos(tourProgress) * dist;
+                    camera3D.position.y = camHeight;
+
+                    // Always look at house center
+                    camera3D.lookAt(0, camHeight * 0.3, 0);
+
+                    if (tourProgress >= Math.PI * 2) {
+                        tourProgress = 0;
+                        tourStep++;
+                    }
+                }
+            }
+
+            // --- VIDEO RECORDING LOGIC ---
+            let isRecording = false;
+            let mediaRecorder;
+            let recordedChunks = [];
+
+            function toggleRecording() {
+                if (!isRecording) {
+                    startRecording();
+                } else {
+                    stopRecording();
+                }
+            }
+
+            function startRecording() {
+                if (!renderer3D || !renderer3D.domElement) {
+                    showToast('⚠️', '3D view not initialized!');
+                    return;
+                }
+
+                const canvas = renderer3D.domElement;
+
+                // captureStream(30) captures the canvas content at 30 FPS.
+                // preserveDrawingBuffer: true in renderer init ensures stable capture.
+
+                try {
+                    const stream = canvas.captureStream(30); // 30 FPS
+
+                    // Try to find supported mime type
+                    const types = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'];
+                    let selectedType = types.find(t => MediaRecorder.isTypeSupported(t)) || '';
+
+                    mediaRecorder = new MediaRecorder(stream, { mimeType: selectedType });
+                    recordedChunks = [];
+
+                    mediaRecorder.ondataavailable = (event) => {
+                        if (event.data.size > 0) recordedChunks.push(event.data);
+                    };
+
+                    mediaRecorder.onstop = () => {
+                        const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.style.display = 'none';
+                        a.href = url;
+                        a.download = `floor-plan-3d-${new Date().getTime()}.webm`;
+                        document.body.appendChild(a);
+                        a.click();
+                        setTimeout(() => {
+                            document.body.removeChild(a);
+                            window.URL.revokeObjectURL(url);
+                        }, 100);
+                        showToast('✅', 'Recording saved & downloaded!');
+                    };
+
+                    mediaRecorder.start();
+                    isRecording = true;
+                    updateRecordingUI();
+                    showToast('🔴', 'Recording started...');
+                } catch (err) {
+                    console.error('Recording Error:', err);
+                    showToast('❌', 'Recording failed: ' + err.message);
+                }
+            }
+
+            function stopRecording() {
+                if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                    mediaRecorder.stop();
+                }
+                isRecording = false;
+                updateRecordingUI();
+            }
+
+            function updateRecordingUI() {
+                const btn = document.getElementById('recordBtn');
+                if (!btn) return;
+                const text = btn.querySelector('.text');
+                const icon = btn.querySelector('.material-symbols-outlined');
+                if (isRecording) {
+                    btn.classList.add('active');
+                    text.textContent = 'Recording...';
+                    icon.textContent = 'stop_circle';
+                    btn.title = "Stop Recording";
+                } else {
+                    btn.classList.remove('active');
+                    text.textContent = 'Record';
+                    icon.textContent = 'videocam';
+                    btn.title = "Record Video";
                 }
             }
 
@@ -6045,7 +6004,11 @@
                 camera3D.position.set(200, 400, 600);
 
                 // Renderer
-                renderer3D = new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: true });
+                renderer3D = new THREE.WebGLRenderer({
+                    antialias: true,
+                    logarithmicDepthBuffer: true,
+                    preserveDrawingBuffer: true // Required for clear video/image capture
+                });
                 renderer3D.setSize(width, height);
                 renderer3D.shadowMap.enabled = true;
                 renderer3D.shadowMap.type = THREE.PCFSoftShadowMap;
