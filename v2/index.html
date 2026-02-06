@@ -1032,10 +1032,16 @@
         }
 
         @media (max-width: 992px) {
+            .main-content {
+                flex-direction: column !important;
+                overflow-y: auto !important;
+                height: auto !important;
+            }
 
             .three-controls-overlay {
-                bottom: 15px;
-                /* Adjust for mobile viewports */
+                bottom: 40px;
+                /* Raised to avoid mobile browser bars */
+                z-index: 2000;
             }
 
             .three-overlay-controls {
@@ -1079,10 +1085,10 @@
         /* 3D Controls Toggle */
         .three-controls-toggle {
             position: absolute;
-            bottom: 20px;
+            bottom: 40px;
             left: 50%;
             transform: translateX(-50%);
-            z-index: 1010;
+            z-index: 2005;
             background: var(--primary);
             color: white;
             border: none;
@@ -6092,14 +6098,21 @@
                     // Floor Slab (Solid)
                     const slabGeo = new THREE.BoxGeometry(fW3d + 4, slabThick3d, fH3d + 4);
                     let slabMat;
-                    // Check if floorTex is a DataURL (uploaded image) or a key in ASSETS
-                    if (floorTex && (floorTex.startsWith('data:image') || ASSETS[floorTex])) {
+                    // Support both asset keys, data URLs, and direct file paths
+                    if (floorTex) {
                         const texUrl = ASSETS[floorTex] || floorTex;
-                        const texture = new THREE.TextureLoader().load(texUrl);
+                        const texture = new THREE.TextureLoader().load(texUrl,
+                            // onLoad
+                            () => redrawAll(),
+                            // onProgress
+                            undefined,
+                            // onError
+                            () => { console.warn(`Failed to load texture: ${texUrl}`); }
+                        );
                         texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-                        texture.repeat.set(floor.length / 5, floor.breadth / 5);
+                        texture.repeat.set((floor.length || project.totalLength) / 5, (floor.breadth || project.totalBreadth) / 5);
                         slabMat = new THREE.MeshStandardMaterial({ map: texture });
-                    } else if (project.groundTexture && !floorTex) {
+                    } else if (project.groundTexture) {
                         const texture = new THREE.TextureLoader().load(project.groundTexture);
                         texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
                         texture.repeat.set(floor.length / 10, floor.breadth / 10);
