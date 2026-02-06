@@ -1160,6 +1160,11 @@
                 <button class="btn btn-secondary" onclick="exportDesign()">
                     <span>📤</span> <span>Export</span>
                 </button>
+                <button class="btn btn-secondary" onclick="loadProject()">
+                    <span>📂</span> <span>Import</span>
+                </button>
+                <input type="file" id="projectFileInput" style="display: none;" accept=".json"
+                    onchange="handleFileUpload(event)">
                 <button class="btn btn-secondary" onclick="saveProject()">
                     <span>💾</span> <span>Save</span>
                 </button>
@@ -5442,6 +5447,67 @@
                 showToast('✓', 'Project saved successfully!');
             }
 
+            function loadProject() {
+                document.getElementById('projectFileInput').click();
+            }
+
+            function handleFileUpload(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        if (!data.project || !data.elements) {
+                            throw new Error('Invalid project file format');
+                        }
+
+                        // Backup current state for undo
+                        saveState();
+
+                        // Restore project and elements
+                        project = data.project;
+
+                        // Sync active floor elements
+                        const activeFloor = project.floors[project.activeFloorIndex];
+                        elements = activeFloor.elements || [];
+                        project.rooms = activeFloor.rooms || [];
+
+                        // Reset global view state
+                        offsetX = 0;
+                        offsetY = 0;
+                        undoStack = [];
+                        redoStack = [];
+
+                        // If the file structure is old (elements outside floors), maintain compatibility
+                        if (data.elements && elements.length === 0) {
+                            elements = data.elements;
+                            activeFloor.elements = elements;
+                        }
+
+                        // Refresh UI
+                        updateFloorUI();
+                        updateLayerCounts();
+                        updateDimensionDisplay();
+                        redrawAll();
+
+                        // Hide welcome screen if it exists
+                        const welcome = document.getElementById('welcomeScreen');
+                        if (welcome) welcome.style.display = 'none';
+
+                        showToast('✓', 'Project loaded successfully!');
+                    } catch (err) {
+                        console.error('Load Error:', err);
+                        showToast('❌', 'Failed to load project: ' + err.message);
+                    }
+                };
+                reader.readAsText(file);
+
+                // Reset input so the same file can be uploaded again if needed
+                event.target.value = '';
+            }
+
             // --- 3D VIEW LOGIC ---
             let is3DMode = false;
             const clock = new THREE.Clock(); // Time-based precision
@@ -6137,9 +6203,10 @@
                     const wallRegistry = new Set();
                     function add3DWall(x1, z1, x2, z2, h, t, c, yOff = 0, c2 = null, texKey = null) {
                         const r = v => Math.round(v);
-                        const pOffset = yOff > 0 ? `|Y${r(yOff)}` : '';
-                        const p1 = `${r(x1)},${r(z1)}|${r(x2)},${r(z2)}${pOffset}`;
-                        const p2 = `${r(x2)},${r(z2)}|${r(x1)},${r(z1)}${pOffset}`;
+                        const pOffset = yOff !== 0 ? `|Y${r(yOff)}` : '';
+                        const pHeight = `|H${r(h)}`;
+                        const p1 = `${r(x1)},${r(z1)}|${r(x2)},${r(z2)}${pOffset}${pHeight}`;
+                        const p2 = `${r(x2)},${r(z2)}|${r(x1)},${r(z1)}${pOffset}${pHeight}`;
                         if (wallRegistry.has(p1) || wallRegistry.has(p2)) return;
 
                         const dx = x2 - x1;
@@ -6184,6 +6251,19 @@
                         if (el.type === 'wall') walls.push(el);
                         else if (el.type === 'door' || el.type === 'window') holes.push(el);
                         else if (el.type === 'symbol') symbolElements.push(el);
+                    });
+
+                    // Add room boundaries to walls array so they can be cut for doors/windows
+                    floor.rooms.forEach(room => {
+                        const rw = room.width || (room.length * SCALE);
+                        const rh = room.height || (room.breadth * SCALE);
+                        const rColor = room.color || '#475569';
+                        const rThick = 0.2; // Standard interior wall thickness for rooms in feet
+
+                        walls.push({ type: 'wall', x1: room.x, y1: room.y, x2: room.x + rw, y2: room.y, color: rColor, thickness: rThick });
+                        walls.push({ type: 'wall', x1: room.x, y1: room.y + rh, x2: room.x + rw, y2: room.y + rh, color: rColor, thickness: rThick });
+                        walls.push({ type: 'wall', x1: room.x, y1: room.y, x2: room.x, y2: room.y + rh, color: rColor, thickness: rThick });
+                        walls.push({ type: 'wall', x1: room.x + rw, y1: room.y, x2: room.x + rw, y2: room.y + rh, color: rColor, thickness: rThick });
                     });
 
                     // 2. Process Walls (Cut for openings)
@@ -6384,9 +6464,20 @@
                             mullion.position.set(dist / 2, sillH + winH / 2, 0);
                             winGroup.add(mullion);
 
-                            const transom = new THREE.Mesh(new THREE.BoxGeometry(dist - fThick * 2, fThick / 2, 2), fMat);
-                            transom.position.set(dist / 2, sillH + winH * 0.75, 0);
-                            winGroup.add(transom);
+                            // Horizontal Transoms (3 lines: Top, Center, Bottom)
+                            const transomGeo = new THREE.BoxGeometry(dist - fThick * 2, fThick / 2, 2);
+
+                            const tBottom = new THREE.Mesh(transomGeo, fMat);
+                            tBottom.position.set(dist / 2, sillH + winH * 0.25, 0);
+                            winGroup.add(tBottom);
+
+                            const tCenter = new THREE.Mesh(transomGeo, fMat);
+                            tCenter.position.set(dist / 2, sillH + winH * 0.5, 0);
+                            winGroup.add(tCenter);
+
+                            const tTop = new THREE.Mesh(transomGeo, fMat);
+                            tTop.position.set(dist / 2, sillH + winH * 0.75, 0);
+                            winGroup.add(tTop);
                         }
                     });
 
@@ -6437,12 +6528,7 @@
                         rMesh.position.set(start.x + rW3d / 2, elevation3d + 1, start.z + rH3d / 2);
                         scene3D.add(rMesh);
 
-                        const rwH = floorHeight3d;
-                        const rwT = 3;
-                        add3DWall(start.x, start.z, start.x + rW3d, start.z, rwH, rwT, room.color, 0, room.color);
-                        add3DWall(start.x, start.z + rH3d, start.x + rW3d, start.z + rH3d, rwH, rwT, room.color, 0, room.color);
-                        add3DWall(start.x, start.z, start.x, start.z + rH3d, rwH, rwT, room.color, 0, room.color);
-                        add3DWall(start.x + rW3d, start.z, start.x + rW3d, start.z + rH3d, rwH, rwT, room.color, 0, room.color);
+                        // Interior walls are now handled by the main wall processing loop!
 
                         const indoorLight = new THREE.PointLight(0xfff4e0, 0.4, 300);
                         indoorLight.position.set(start.x + rW3d / 2, elevation3d + floorHeight3d * 0.8, start.z + rH3d / 2);
