@@ -412,6 +412,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            position: relative;
             background:
                 radial-gradient(circle at 20% 30%, rgba(37, 99, 235, 0.05) 0%, transparent 50%),
                 radial-gradient(circle at 80% 70%, rgba(124, 58, 237, 0.05) 0%, transparent 50%),
@@ -436,6 +437,16 @@
             width: 100px;
             cursor: pointer;
             accent-color: var(--primary);
+        }
+
+        /* 3D Container */
+        #threeContainer {
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            background: var(--bg-main);
         }
 
         /* Right Sidebar */
@@ -1620,6 +1631,10 @@
                             title="Toggle Room Mode">
                             <span>🏠</span>
                         </button>
+                        <button class="btn btn-secondary btn-icon active" id="measurementToggleBtn"
+                            onclick="toggleMeasurements()" title="Toggle Measurements">
+                            <span>📏</span>
+                        </button>
                     </div>
                 </div>
 
@@ -1821,6 +1836,22 @@
                                     </button>
                                 </div>
                             </div>
+
+                            <!-- Wall Specific Controls -->
+                            <div id="wallHeightCtrl"
+                                style="display: none; border-top: 1px solid #fecaca; padding-top: 10px;">
+                                <div
+                                    style="font-size: 11px; font-weight: bold; color: #991b1b; margin-bottom: 6px; text-transform: uppercase;">
+                                    Wall Height (ft)</div>
+                                <div style="display: flex; gap: 6px; align-items: center;">
+                                    <input type="number" id="selectedWallHeight" class="property-input" min="1" max="50"
+                                        step="0.5" onchange="updateSelectedWallHeight(this.value)"
+                                        placeholder="Default">
+                                    <span class="dimension-unit">ft</span>
+                                </div>
+                                <div style="font-size: 10px; color: #ef4444; margin-top: 4px;">Leave empty for floor
+                                    height</div>
+                            </div>
                         </div>
                     </div>
                     <div class="property-group">
@@ -1864,6 +1895,14 @@
                                 <option value="brick">Brick</option>
                                 <option value="wood">Wood</option>
                                 <option value="marble">Marble</option>
+                            </select>
+                        </div>
+                        <div class="property-row">
+                            <label class="property-label">Wall Alignment</label>
+                            <select class="property-input" id="wallAlignment" onchange="redrawAll()">
+                                <option value="center">Center</option>
+                                <option value="outside">Outside (Outward)</option>
+                                <option value="inside">Inside (Inward)</option>
                             </select>
                         </div>
                     </div>
@@ -2543,9 +2582,11 @@
                         ctx.fillText(room.name, room.x + room.width / 2, room.y + room.height / 2 - 10);
 
                         // Dimensions
-                        ctx.font = '18px "DM Sans"';
-                        const area = Math.round(room.length * room.breadth);
-                        ctx.fillText(`${area} sq ft`, room.x + room.width / 2, room.y + room.height / 2 + 20);
+                        if (showMeasurements) {
+                            ctx.font = '18px "DM Sans"';
+                            const area = Math.round(room.length * room.breadth);
+                            ctx.fillText(`${area} sq ft`, room.x + room.width / 2, room.y + room.height / 2 + 20);
+                        }
                     } else {
                         ctx.font = '32px Arial';
                         ctx.textAlign = 'center';
@@ -2554,9 +2595,11 @@
                         ctx.font = 'bold 14px DM Sans';
                         ctx.fillStyle = '#1e293b';
                         ctx.fillText(room.name, room.x + room.width / 2, room.y + room.height / 2 + 20);
-                        ctx.font = '11px DM Sans';
-                        ctx.fillStyle = '#64748b';
-                        ctx.fillText(`${room.length}' × ${room.breadth}'`, room.x + room.width / 2, room.y + room.height / 2 + 35);
+                        if (showMeasurements) {
+                            ctx.font = '11px DM Sans';
+                            ctx.fillStyle = '#64748b';
+                            ctx.fillText(`${room.length}' × ${room.breadth}'`, room.x + room.width / 2, room.y + room.height / 2 + 35);
+                        }
                     }
                 });
             }
@@ -2663,6 +2706,7 @@
             }
 
             function drawWallDimension(x1, y1, x2, y2, color) {
+                if (!showMeasurements) return;
                 if (isExporting) {
                     // Professional Simple Dimensions
                     const distance = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
@@ -2746,6 +2790,7 @@
             let SCALE = 15; // pixels per foot
             let rotation = 0;
             let showGridNumbers = false;
+            let showMeasurements = true;
             let showRoomMode = true; // Default room mode
             let offsetX = 0;
             let offsetY = 0;
@@ -3405,10 +3450,10 @@
                     project.floors[0].homeWall = project.homeWall;
 
                     // Add 4 boundary walls to elements
-                    elements.push({ type: 'wall', x1: x, y1: y, x2: x + width, y2: y, color: boundaryColor, thickness: boundaryThick, isBoundary: true }); // North
-                    elements.push({ type: 'wall', x1: x, y1: y + height, x2: x + width, y2: y + height, color: boundaryColor, thickness: boundaryThick, isBoundary: true }); // South
-                    elements.push({ type: 'wall', x1: x, y1: y, x2: x, y2: y + height, color: boundaryColor, thickness: boundaryThick, isBoundary: true }); // West
-                    elements.push({ type: 'wall', x1: x + width, y1: y, x2: x + width, y2: y + height, color: boundaryColor, thickness: boundaryThick, isBoundary: true }); // East
+                    elements.push({ type: 'wall', x1: x, y1: y, x2: x + width, y2: y, color: boundaryColor, thickness: boundaryThick, isBoundary: true, alignment: 'outside' }); // North
+                    elements.push({ type: 'wall', x1: x, y1: y + height, x2: x + width, y2: y + height, color: boundaryColor, thickness: boundaryThick, isBoundary: true, alignment: 'outside' }); // South
+                    elements.push({ type: 'wall', x1: x, y1: y, x2: x, y2: y + height, color: boundaryColor, thickness: boundaryThick, isBoundary: true, alignment: 'outside' }); // West
+                    elements.push({ type: 'wall', x1: x + width, y1: y, x2: x + width, y2: y + height, color: boundaryColor, thickness: boundaryThick, isBoundary: true, alignment: 'outside' }); // East
                 }
 
 
@@ -3575,6 +3620,19 @@
                 } else {
                     btn.style.background = '';
                     btn.style.color = '';
+                }
+                redrawAll();
+            }
+
+            function toggleMeasurements() {
+                showMeasurements = !showMeasurements;
+                const btn = document.getElementById('measurementToggleBtn');
+                if (showMeasurements) {
+                    btn.classList.add('active');
+                    showToast('📏', 'Measurements: ON');
+                } else {
+                    btn.classList.remove('active');
+                    showToast('📏', 'Measurements: OFF');
                 }
                 redrawAll();
             }
@@ -3805,6 +3863,7 @@
                 const typeName = document.getElementById('selectedTypeName');
                 const typeIcon = document.getElementById('selectedTypeIcon');
                 const doorCtrls = document.querySelectorAll('.door-ctrl');
+                const wallHeightCtrl = document.getElementById('wallHeightCtrl');
                 const scaleCtrls = document.getElementById('scaleCtrls');
 
                 if (selectedElement || selectedRoom) {
@@ -3820,6 +3879,12 @@
                     }
 
                     doorCtrls.forEach(c => c.style.display = (selectedElement?.type === 'door') ? 'block' : 'none');
+                    if (wallHeightCtrl) {
+                        wallHeightCtrl.style.display = (selectedElement?.type === 'wall') ? 'block' : 'none';
+                        if (selectedElement?.type === 'wall') {
+                            document.getElementById('selectedWallHeight').value = selectedElement.height || '';
+                        }
+                    }
 
                     const isWall = selectedElement?.type === 'wall';
                     const isColorable = selectedElement && (isWall || selectedElement.type === 'door' || selectedElement.type === 'window' || selectedElement.type === 'text');
@@ -3848,6 +3913,18 @@
                 } else {
                     panel.style.display = 'none';
                 }
+            }
+
+            function updateSelectedWallHeight(val) {
+                if (!selectedElement || selectedElement.type !== 'wall') return;
+                saveState();
+                if (val && val > 0) {
+                    selectedElement.height = parseFloat(val);
+                } else {
+                    delete selectedElement.height;
+                }
+                if (is3DMode) init3D(); // Refresh 3D if active
+                showToast('📏', 'Wall height updated');
             }
 
             function changeSelectedColor(type) {
@@ -4353,11 +4430,11 @@
                     }
                 }
 
-                // Constrain to Home Wall Boundary
-                if (project.homeWall) {
-                    x = Math.max(project.homeWall.x, Math.min(project.homeWall.x + project.homeWall.width, x));
-                    y = Math.max(project.homeWall.y, Math.min(project.homeWall.y + project.homeWall.height, y));
-                }
+                // Constrain to Home Wall Boundary - DISABLED to allow drawing outside
+                // if (project.homeWall) {
+                //     x = Math.max(project.homeWall.x, Math.min(project.homeWall.x + project.homeWall.width, x));
+                //     y = Math.max(project.homeWall.y, Math.min(project.homeWall.y + project.homeWall.height, y));
+                // }
 
                 return { x, y };
             }
@@ -4399,8 +4476,31 @@
                     x2: x2,
                     y2: y2,
                     color: document.getElementById('wallColor').value,
-                    thickness: parseFloat(document.getElementById('wallThickness').value)
+                    thickness: parseFloat(document.getElementById('wallThickness').value),
+                    alignment: (type === 'wall' || type === 'door' || type === 'window') ? getSmartAlignment(x1, y1, x2, y2) : 'center'
                 };
+
+                function getSmartAlignment(x1, y1, x2, y2) {
+                    const userAlignment = document.getElementById('wallAlignment').value;
+
+                    // If no boundary, use user's choice
+                    if (!project.homeWall) return userAlignment;
+
+                    // Check if wall midpoint is inside or outside boundary
+                    const midX = (x1 + x2) / 2;
+                    const midY = (y1 + y2) / 2;
+                    const hw = project.homeWall;
+
+                    const isInside = (midX >= hw.x && midX <= hw.x + hw.width &&
+                        midY >= hw.y && midY <= hw.y + hw.height);
+
+                    // Auto-select alignment based on position
+                    if (isInside) {
+                        return 'inside';  // Inside boundary -> thickness goes inward
+                    } else {
+                        return 'outside'; // Outside boundary -> thickness goes outward
+                    }
+                }
 
                 elements.push(element);
                 updateLayerCounts();
@@ -4456,11 +4556,49 @@
 
                 switch (currentTool) {
                     case 'wall':
-                        ctx.lineWidth = parseFloat(document.getElementById('wallThickness').value) * SCALE;
+                        const thickFt = parseFloat(document.getElementById('wallThickness').value) || 0.5;
+                        const thick = thickFt * SCALE;
+                        ctx.lineWidth = thick;
                         ctx.strokeStyle = document.getElementById('wallColor').value;
+
+                        let ox1 = x1, oy1 = y1, ox2 = x2, oy2 = y2;
+                        // Smart alignment detection based on position
+                        let align = document.getElementById('wallAlignment').value;
+                        if (project.homeWall) {
+                            const midX = (x1 + x2) / 2;
+                            const midY = (y1 + y2) / 2;
+                            const hw = project.homeWall;
+                            const isInside = (midX >= hw.x && midX <= hw.x + hw.width &&
+                                midY >= hw.y && midY <= hw.y + hw.height);
+                            align = isInside ? 'inside' : 'outside';
+                        }
+
+                        if (align && align !== 'center') {
+                            const dx = x2 - x1;
+                            const dy = y2 - y1;
+                            const length = Math.sqrt(dx * dx + dy * dy);
+                            if (length > 0) {
+                                const hW = project.homeWall;
+                                const targetX = hW ? hW.x + hW.width / 2 : canvas.width / 2;
+                                const targetY = hW ? hW.y + hW.height / 2 : canvas.height / 2;
+
+                                let nx = -dy / length;
+                                let ny = dx / length;
+                                const midX = (x1 + x2) / 2;
+                                const midY = (y1 + y2) / 2;
+                                const dot = nx * (midX - targetX) + ny * (midY - targetY);
+                                if (dot < 0) { nx = -nx; ny = -ny; }
+                                if (align === 'inside') { nx = -nx; ny = -ny; }
+
+                                const offset = thick / 2;
+                                ox1 += nx * offset; oy1 += ny * offset;
+                                ox2 += nx * offset; oy2 += ny * offset;
+                            }
+                        }
+
                         ctx.beginPath();
-                        ctx.moveTo(x1, y1);
-                        ctx.lineTo(x2, y2);
+                        ctx.moveTo(ox1, oy1);
+                        ctx.lineTo(ox2, oy2);
                         ctx.stroke();
                         drawWallDimension(x1, y1, x2, y2, document.getElementById('wallColor').value);
                         break;
@@ -4595,6 +4733,7 @@
             }
 
             function drawWallDimension(x1, y1, x2, y2, color) {
+                if (!showMeasurements) return;
                 const distance = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
                 const lengthFt = (distance / SCALE).toFixed(1);
                 const midX = (x1 + x2) / 2;
@@ -4701,8 +4840,7 @@
                 ctx.stroke();
 
                 ctx.restore();
-
-                if (!preview) {
+                if (!preview && showMeasurements) {
                     const lengthFt = (distance / SCALE).toFixed(1);
                     const midX = (x1 + x2) / 2;
                     const midY = (y1 + y2) / 2;
@@ -4762,7 +4900,7 @@
 
                 ctx.restore();
 
-                if (!preview && showWindowLabels) {
+                if (!preview && showWindowLabels && showMeasurements) {
                     // Calculate dimensions for display
                     const lengthFt = (distance / SCALE).toFixed(1);
                     const midX = (x1 + x2) / 2;
@@ -4797,6 +4935,7 @@
             }
 
             function drawDimensionLine(x1, y1, x2, y2) {
+                if (!showMeasurements) return;
                 ctx.strokeStyle = '#2563eb';
                 ctx.lineWidth = 1;
                 ctx.setLineDash([]);
@@ -5167,17 +5306,45 @@
                 const wallColor = isExporting ? '#000000' : (document.getElementById('wallColor').value || '#1e293b');
                 const segments = new Set();
 
-                const addSegment = (x1, y1, x2, y2, specialThick = null, specialColor = null) => {
+                const addSegment = (x1, y1, x2, y2, specialThick = null, specialColor = null, alignment = 'center', targetX = null, targetY = null) => {
                     const r = v => Math.round(v);
                     const p1 = `${r(x1)},${r(y1)}|${r(x2)},${r(y2)}`;
                     const p2 = `${r(x2)},${r(y2)}|${r(x1)},${r(y1)}`;
                     if (!segments.has(p1) && !segments.has(p2)) {
+                        const thickFt = (specialThick || wallThickFt);
+                        const thick = thickFt * (isExporting ? 1.5 : 1) * SCALE;
+
+                        let ox1 = x1, oy1 = y1, ox2 = x2, oy2 = y2;
+
+                        if (alignment && alignment !== 'center') {
+                            const dx = x2 - x1;
+                            const dy = y2 - y1;
+                            const length = Math.sqrt(dx * dx + dy * dy);
+                            if (length > 0) {
+                                let nx = -dy / length;
+                                let ny = dx / length;
+
+                                if (targetX !== null && targetY !== null) {
+                                    const midX = (x1 + x2) / 2;
+                                    const midY = (y1 + y2) / 2;
+                                    const dot = nx * (midX - targetX) + ny * (midY - targetY);
+                                    if (dot < 0) { nx = -nx; ny = -ny; }
+
+                                    if (alignment === 'inside') { nx = -nx; ny = -ny; }
+                                }
+
+                                const offset = thick / 2;  // Half thickness keeps line at boundary edge
+                                ox1 += nx * offset; oy1 += ny * offset;
+                                ox2 += nx * offset; oy2 += ny * offset;
+                            }
+                        }
+
                         ctx.strokeStyle = specialColor || wallColor;
-                        ctx.lineWidth = (specialThick || wallThickFt) * (isExporting ? 1.5 : 1) * SCALE;
+                        ctx.lineWidth = thick;
                         ctx.lineCap = 'square';
                         ctx.beginPath();
-                        ctx.moveTo(x1, y1);
-                        ctx.lineTo(x2, y2);
+                        ctx.moveTo(ox1, oy1);
+                        ctx.lineTo(ox2, oy2);
                         ctx.stroke();
                         segments.add(p1);
                     }
@@ -5197,43 +5364,66 @@
                 // 2. Process room walls
                 project.rooms.forEach(room => {
                     const rx1 = room.x, ry1 = room.y, rx2 = room.x + room.width, ry2 = room.y + room.height;
-                    addSegment(rx1, ry1, rx2, ry1); // North
-                    addSegment(rx1, ry2, rx2, ry2); // South
-                    addSegment(rx1, ry1, rx1, ry2); // West
-                    addSegment(rx2, ry1, rx2, ry2); // East
+                    const rMidX = rx1 + room.width / 2;
+                    const rMidY = ry1 + room.height / 2;
+                    // Room walls are typically interior, but we pass center for future use if needed
+                    addSegment(rx1, ry1, rx2, ry1, 0.2, null, 'center', rMidX, rMidY); // North
+                    addSegment(rx1, ry2, rx2, ry2, 0.2, null, 'center', rMidX, rMidY); // South
+                    addSegment(rx1, ry1, rx1, ry2, 0.2, null, 'center', rMidX, rMidY); // West
+                    addSegment(rx2, ry1, rx2, ry2, 0.2, null, 'center', rMidX, rMidY); // East
                 });
 
                 // 3. Process manual walls
+                const homeMidX = project.homeWall ? project.homeWall.x + project.homeWall.width / 2 : canvas.width / 2;
+                const homeMidY = project.homeWall ? project.homeWall.y + project.homeWall.height / 2 : canvas.height / 2;
+
                 elements.forEach(element => {
                     if (element.type === 'wall') {
-                        addSegment(element.x1, element.y1, element.x2, element.y2, element.thickness, element.color);
+                        addSegment(element.x1, element.y1, element.x2, element.y2, element.thickness, element.color, element.alignment || 'center', homeMidX, homeMidY);
                         drawWallDimension(element.x1, element.y1, element.x2, element.y2, element.color);
 
                         // Draw Selection Highlight for Wall
                         if (element === selectedElement) {
                             ctx.save();
-                            ctx.strokeStyle = '#3b82f6'; // Blue selection color
+                            ctx.strokeStyle = '#3b82f6';
                             ctx.lineWidth = 2;
                             ctx.setLineDash([5, 5]);
 
-                            const ang = Math.atan2(element.y2 - element.y1, element.x2 - element.x1);
+                            const dx = element.x2 - element.x1;
+                            const dy = element.y2 - element.y1;
+                            const dist = Math.sqrt(dx * dx + dy * dy);
+                            const ang = Math.atan2(dy, dx);
                             const thickFt = element.thickness || parseFloat(document.getElementById('wallThickness').value) || 0.5;
                             const thick = thickFt * SCALE;
+
+                            let hx1 = element.x1, hy1 = element.y1, hx2 = element.x2, hy2 = element.y2;
+                            const align = element.alignment;
+                            if (align && align !== 'center') {
+                                let nx = -dy / dist;
+                                let ny = dx / dist;
+                                const dot = nx * (((element.x1 + element.x2) / 2) - homeMidX) + ny * (((element.y1 + element.y2) / 2) - homeMidY);
+                                if (dot < 0) { nx = -nx; ny = -ny; }
+                                if (align === 'inside') { nx = -nx; ny = -ny; }
+                                const off = thick / 2;
+                                hx1 += nx * off; hy1 += ny * off;
+                                hx2 += nx * off; hy2 += ny * off;
+                            }
+
                             const offset = (thick / 2) + 4;
 
                             // Side 1
                             ctx.beginPath();
-                            ctx.moveTo(element.x1 + offset * Math.sin(ang), element.y1 - offset * Math.cos(ang));
-                            ctx.lineTo(element.x2 + offset * Math.sin(ang), element.y2 - offset * Math.cos(ang));
+                            ctx.moveTo(hx1 + offset * Math.sin(ang), hy1 - offset * Math.cos(ang));
+                            ctx.lineTo(hx2 + offset * Math.sin(ang), hy2 - offset * Math.cos(ang));
                             ctx.stroke();
 
                             // Side 2
                             ctx.beginPath();
-                            ctx.moveTo(element.x1 - offset * Math.sin(ang), element.y1 + offset * Math.cos(ang));
-                            ctx.lineTo(element.x2 - offset * Math.sin(ang), element.y2 + offset * Math.cos(ang));
+                            ctx.moveTo(hx1 - offset * Math.sin(ang), hy1 + offset * Math.cos(ang));
+                            ctx.lineTo(hx2 - offset * Math.sin(ang), hy2 + offset * Math.cos(ang));
                             ctx.stroke();
 
-                            // Endpoints
+                            // Endpoints (Interaction points stay on original line)
                             ctx.fillStyle = '#3b82f6';
                             ctx.beginPath();
                             ctx.arc(element.x1, element.y1, 4, 0, Math.PI * 2);
@@ -6374,16 +6564,42 @@
                         let currentT = 0;
                         const drawSeg = (tA, tB) => {
                             if (tB - tA < 0.01) return; // Skip tiny segments
-                            const sx1 = wall.x1 + wx * tA;
-                            const sy1 = wall.y1 + wy * tA;
-                            const sx2 = wall.x1 + wx * tB;
-                            const sy2 = wall.y1 + wy * tB;
+                            let sx1 = wall.x1 + wx * tA;
+                            let sy1 = wall.y1 + wy * tA;
+                            let sx2 = wall.x1 + wx * tB;
+                            let sy2 = wall.y1 + wy * tB;
+
+                            // Apply Wall Alignment Offset in 2D before converting to 3D
+                            const align = wall.alignment;
+                            if (align && align !== 'center') {
+                                const hW = floor.homeWall || project.floors[0].homeWall;
+                                const targetX = hW ? hW.x + hW.width / 2 : canvas.width / 2;
+                                const targetY = hW ? hW.y + hW.height / 2 : canvas.height / 2;
+
+                                const dx = wall.x2 - wall.x1;
+                                const dy = wall.y2 - wall.y1;
+                                const len = Math.sqrt(dx * dx + dy * dy);
+                                if (len > 0) {
+                                    let nx = -dy / len;
+                                    let ny = dx / len;
+                                    const midX = (wall.x1 + wall.x2) / 2;
+                                    const midY = (wall.y1 + wall.y2) / 2;
+                                    const dot = nx * (midX - targetX) + ny * (midY - targetY);
+                                    if (dot < 0) { nx = -nx; ny = -ny; }
+                                    if (align === 'inside') { nx = -nx; ny = -ny; }
+
+                                    const offset = (wall.thickness || 0.5) * SCALE / 2;
+                                    sx1 += nx * offset; sy1 += ny * offset;
+                                    sx2 += nx * offset; sy2 += ny * offset;
+                                }
+                            }
 
                             const p1 = pxTo3d(sx1, sy1);
                             const p2 = pxTo3d(sx2, sy2);
                             const thick = (wall.thickness || 0.5) * unit;
+                            const wHeight = wall.height ? (wall.height * unit) : floorHeight3d;
 
-                            add3DWall(p1.x, p1.z, p2.x, p2.z, floorHeight3d, thick, wall.color || '#475569', 0, wall.color2, wall.texture);
+                            add3DWall(p1.x, p1.z, p2.x, p2.z, wHeight, thick, wall.color || '#475569', 0, wall.color2, wall.texture);
                         };
 
                         merged.forEach(cut => {
@@ -6549,7 +6765,7 @@
                         const config = symbols[el.symbolType];
 
                         if (config?.isStair) {
-                            create3DStairs_Adjusted(center, el, config, unit, elevation3d, floorHeight3d);
+                            create3DStairs_Adjusted(center, el, config, unit, elevation3d, floorHeight3d, walls);
                         } else {
                             create3DFurniture(center, el, config, scaleX, scaleZ, elevation3d, scene3D);
                         }
@@ -6700,63 +6916,235 @@
                     return wall;
                 }
 
-                function create3DStairs_Adjusted(center, element, config, unit, elevation, floorH) {
+                function create3DStairs_Adjusted(center, element, config, unit, elevation, floorH, walls) {
                     const rot = (element.rotation || 0) * Math.PI / 180;
                     const group = new THREE.Group();
                     group.position.set(center.x, elevation, center.z);
                     group.rotateY(-rot);
                     scene3D.add(group);
-                    const mat = new THREE.MeshStandardMaterial({ color: 0xcbd5e1 });
+
+                    // Materials
+                    const defColor = (typeof project !== 'undefined' && project.defaultWallColor) ? project.defaultWallColor : '#475569';
+                    const stepMat = new THREE.MeshStandardMaterial({ color: 0xcbd5e1 });
+                    const edgeMat = new THREE.LineBasicMaterial({ color: 0x000000 });
+                    const wallMat = new THREE.MeshStandardMaterial({ color: defColor });
+
+                    // Standard step dimensions
+                    const stepRise = 7 * (unit / 15);
+                    const stepThickness = 2 * (unit / 15);
+
+                    // Hand Wall Config
+                    const wallH = 3 * unit;
+                    const wallT = 0.3 * unit;
+
+                    // Adjacency Check (Straight Only)
+                    const checkSide = (side) => {
+                        if (!walls || config.stairType !== 'straight') return false;
+                        const widthFt = element.width || config.width;
+                        const wPx = widthFt * unit;
+                        const cx = element.x + wPx / 2;
+                        const lengthFt = element.length || config.length;
+                        const lPx = lengthFt * unit;
+                        const cy = element.y + lPx / 2;
+
+                        const offset = (side === 'left' ? -wPx / 2 : wPx / 2);
+                        const ang = (element.rotation || 0) * Math.PI / 180;
+                        const mx = offset * Math.cos(ang);
+                        const my = offset * Math.sin(ang);
+                        const px = cx + mx;
+                        const py = cy + my;
+
+                        return walls.some(w => {
+                            const wx1 = w.x1, wy1 = w.y1, wx2 = w.x2, wy2 = w.y2;
+                            const l2 = (wx2 - wx1) ** 2 + (wy2 - wy1) ** 2;
+                            if (l2 === 0) return false;
+                            let t = ((px - wx1) * (wx2 - wx1) + (py - wy1) * (wy2 - wy1)) / l2;
+                            t = Math.max(0, Math.min(1, t));
+                            const dx = px - (wx1 + t * (wx2 - wx1));
+                            const dy = py - (wy1 + t * (wy2 - wy1));
+                            return (dx * dx + dy * dy) < 625; // 25px threshold
+                        });
+                    };
+                    const hasLeftWall = checkSide('left');
+                    const hasRightWall = checkSide('right');
+
                     if (config.stairType === 'straight') {
                         const w = (element.width || config.width) * unit;
                         const l = (element.length || config.length) * unit;
                         const steps = element.steps || 10;
+                        const stepTread = l / steps;
+
                         for (let i = 0; i < steps; i++) {
-                            const stepH = (floorH / steps) * (i + 1);
-                            const stepL = l / steps;
-                            const stepGeo = new THREE.BoxGeometry(w, stepH, stepL);
-                            const step = new THREE.Mesh(stepGeo, mat);
-                            step.position.set(0, stepH / 2, -l / 2 + stepL / 2 + (i * stepL));
+                            const currentHeight = i * stepRise;
+                            const stepGeo = new THREE.BoxGeometry(w, stepThickness, stepTread);
+                            const step = new THREE.Mesh(stepGeo, stepMat);
+                            step.position.set(0, currentHeight + stepThickness / 2, -l / 2 + stepTread / 2 + (i * stepTread));
+                            step.castShadow = true;
+                            step.receiveShadow = true;
+                            const edges = new THREE.EdgesGeometry(stepGeo);
+                            const line = new THREE.LineSegments(edges, edgeMat);
+                            step.add(line);
                             group.add(step);
                         }
+
+                        // Hand Walls (Parapets)
+                        const totalRise = steps * stepRise;
+                        const slope = Math.atan2(totalRise, l);
+                        const wallLen = Math.sqrt(totalRise ** 2 + l ** 2) + stepTread;
+                        const hwGeo = new THREE.BoxGeometry(wallT, wallH, wallLen);
+
+                        // Left Wall
+                        if (!hasLeftWall) {
+                            const hwL = new THREE.Mesh(hwGeo, wallMat);
+                            hwL.position.set(-w / 2 - wallT / 2, totalRise / 2 + wallH / 2 - stepRise, 0);
+                            hwL.rotation.x = -slope;
+                            hwL.castShadow = true;
+                            group.add(hwL);
+                        }
+
+                        // Right Wall
+                        if (!hasRightWall) {
+                            const hwR = new THREE.Mesh(hwGeo, wallMat);
+                            hwR.position.set(w / 2 + wallT / 2, totalRise / 2 + wallH / 2 - stepRise, 0);
+                            hwR.rotation.x = -slope;
+                            hwR.castShadow = true;
+                            group.add(hwR);
+                        }
+
                     } else if (config.stairType === 'lshape') {
                         const w = (element.width || config.width) * unit;
                         const l = (element.length || config.length) * unit;
                         const b = (element.breadth || config.breadth) * unit;
                         const steps = element.steps || 12;
                         const steps1 = Math.floor(steps / 2);
+                        const stepTread1 = l / steps1;
+
+                        // First run (vertical)
                         for (let i = 0; i < steps1; i++) {
-                            const stepH = (floorH / steps) * (i + 1);
-                            const stepL = l / steps1;
-                            const stepGeo = new THREE.BoxGeometry(w, stepH, stepL);
-                            const step = new THREE.Mesh(stepGeo, mat);
-                            step.position.set(0, stepH / 2, l / 2 - stepL / 2 - (i * stepL));
+                            const currentHeight = i * stepRise;
+                            const stepGeo = new THREE.BoxGeometry(w, stepThickness, stepTread1);
+                            const step = new THREE.Mesh(stepGeo, stepMat);
+                            step.position.set(0, currentHeight + stepThickness / 2, l / 2 - stepTread1 / 2 - (i * stepTread1));
+                            step.castShadow = true;
+                            step.receiveShadow = true;
+                            const edges = new THREE.EdgesGeometry(stepGeo);
+                            const line = new THREE.LineSegments(edges, edgeMat);
+                            step.add(line);
                             group.add(step);
                         }
+
+                        // Hand Wall 1
+                        const rise1 = steps1 * stepRise;
+                        const slope1 = Math.atan2(rise1, l);
+                        const len1 = Math.sqrt(rise1 ** 2 + l ** 2) + stepTread1;
+                        const hw1Geo = new THREE.BoxGeometry(wallT, wallH, len1);
+
+                        // Left 1
+                        const hw1L = new THREE.Mesh(hw1Geo, wallMat);
+                        hw1L.position.set(-w / 2 - wallT / 2, rise1 / 2 + wallH / 2 - stepRise, 0); // Local center of run is 0,0,0?
+                        // Wait, loop uses l/2 ... -l/2. Center is 0.
+                        // But Z decreases as Y increases. Slope is negative?
+                        // Z goes +l/2 to -l/2. Y goes Up.
+                        // Towards -Z is Up.
+                        // Normal Slope: +Z = Up.
+                        // So here Slope is Reversed.
+                        hw1L.rotation.x = slope1; // Positive rot tilts Up towards -Z.
+                        group.add(hw1L);
+
+                        // Right 1 (Inner corner needs care, but just overlapping is fine)
+                        const hw1R = hw1L.clone();
+                        hw1R.position.x = w / 2 + wallT / 2;
+                        group.add(hw1R);
+
+                        // Second run (horizontal)
                         const steps2 = steps - steps1;
+                        const stepTread2 = (b - w) / steps2;
                         for (let i = 0; i < steps2; i++) {
-                            const stepH = (floorH / steps) * (steps1 + i + 1);
-                            const stepW = (b - w) / steps2;
-                            const stepGeo = new THREE.BoxGeometry(stepW, stepH, w);
-                            const step = new THREE.Mesh(stepGeo, mat);
-                            step.position.set(-w / 2 + w + stepW / 2 + (i * stepW), stepH / 2, -l / 2 + w / 2);
+                            const currentHeight = (steps1 + i) * stepRise;
+                            const stepGeo = new THREE.BoxGeometry(stepTread2, stepThickness, w);
+                            const step = new THREE.Mesh(stepGeo, stepMat);
+                            step.position.set(-w / 2 + w + stepTread2 / 2 + (i * stepTread2), currentHeight + stepThickness / 2, -l / 2 + w / 2);
+                            step.castShadow = true;
+                            step.receiveShadow = true;
+                            const edges = new THREE.EdgesGeometry(stepGeo);
+                            const line = new THREE.LineSegments(edges, edgeMat);
+                            step.add(line);
                             group.add(step);
                         }
+
+                        // Hand Wall 2
+                        const rise2 = steps2 * stepRise;
+                        const run2 = b - w;
+                        const slope2 = Math.atan2(rise2, run2);
+                        const len2 = Math.sqrt(rise2 ** 2 + run2 ** 2) + stepTread2;
+                        const hw2Geo = new THREE.BoxGeometry(len2, wallH, wallT); // Oriented along X
+
+                        // Center of Run 2
+                        // X start: w/2. X end: w/2 + run2. Mid: w/2 + run2/2.
+                        // Y start: rise1. Y end: rise1 + rise2. Mid: rise1 + rise2/2.
+                        // Z: -l/2 + w/2.
+
+                        const hw2L = new THREE.Mesh(hw2Geo, wallMat);
+                        hw2L.position.set(w / 2 + run2 / 2, rise1 + rise2 / 2 + wallH / 2 - stepRise, -l / 2 + w / 2 - w / 2 - wallT / 2);
+                        // Z pos: Top Edge (-l/2 + w/2 is center of step). Center of step Z is fixed.
+                        // Inner Edge: -l/2 + w/2 - w/2 = -l/2.
+                        // Outer Edge: -l/2 + w/2 + w/2 = -l/2 + w.
+
+                        // Let's place Outer (Bottom)
+                        hw2L.position.z = -l / 2 + w + wallT / 2;
+
+                        // Rotation: X increases, Y increases.
+                        // Rotate around Z axis (Roll).
+                        // +Z rot moves +X Up?
+                        // Right Hand Rule on Z: X->Y. Positive Z rot moves X towards Y.
+                        // So `rotation.z = slope2` tilts +X up.
+                        hw2L.rotation.z = slope2;
+                        group.add(hw2L);
+
+                        // Upper (Inner)
+                        const hw2R = hw2L.clone();
+                        hw2R.position.z = -l / 2 - wallT / 2; // Inner corner
+                        group.add(hw2R);
+
                     } else if (config.stairType === 'spiral') {
                         const r = (element.radius || config.radius) * unit;
                         const steps = config.steps || 12;
+
+                        // Central pole
                         const poleGeo = new THREE.CylinderGeometry(r * 0.1, r * 0.1, floorH, 16);
-                        const pole = new THREE.Mesh(poleGeo, mat);
+                        const pole = new THREE.Mesh(poleGeo, stepMat);
                         pole.position.y = floorH / 2;
+                        pole.castShadow = true;
                         group.add(pole);
+
+                        // Spiral steps
                         for (let i = 0; i < steps; i++) {
                             const ang = (Math.PI * 2 / steps) * i;
-                            const h = (floorH / steps) * (i + 1);
-                            const stepGeo = new THREE.BoxGeometry(r, 4, r * 0.3);
-                            const step = new THREE.Mesh(stepGeo, mat);
-                            step.position.set(Math.cos(ang) * r / 2, h, Math.sin(ang) * r / 2);
+                            const currentHeight = i * stepRise;
+                            const stepGeo = new THREE.BoxGeometry(r * 0.9, stepThickness, r * 0.3);
+                            const step = new THREE.Mesh(stepGeo, stepMat);
+                            step.position.set(Math.cos(ang) * r / 2, currentHeight + stepThickness / 2, Math.sin(ang) * r / 2);
                             step.rotation.y = -ang;
+                            step.castShadow = true;
+                            step.receiveShadow = true;
+                            const edges = new THREE.EdgesGeometry(stepGeo);
+                            const line = new THREE.LineSegments(edges, edgeMat);
+                            step.add(line);
                             group.add(step);
+
+                            // Hand Wall Segment (Outer)
+                            // A vertical panel at the outer tip
+                            const panelW = r * 0.35; // slightly wider than tread width at tip
+                            const panelGeo = new THREE.BoxGeometry(wallT, wallH + stepRise, panelW);
+                            const panel = new THREE.Mesh(panelGeo, wallMat);
+                            // Position: Tip of step.
+                            // Step center is at r/2. Tip is at r.
+                            // We need to rotate panel to be tangent?
+
+                            const radiusTip = r;
+                            panel.position.set(Math.cos(ang) * (r - wallT), currentHeight + wallH / 2, Math.sin(ang) * (r - wallT));
+                            panel.rotation.y = -ang;
+                            group.add(panel);
                         }
                     }
                 }
